@@ -10,7 +10,8 @@ const auth = async (req, res, next) => {
         const user = await User.findOne({ _id: decoded.id });
         if (user) {
           if (user.banned) {
-            res.status(403).send("User is banned");
+            const reason = user.banReason || "none";
+            res.status(403).send(`User is banned. Reason: ${reason}`);
             return;
           }
           req.userId = user._id;

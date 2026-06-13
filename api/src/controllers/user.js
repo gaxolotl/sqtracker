@@ -197,7 +197,8 @@ export const login = async (req, res, next) => {
 
       if (user) {
         if (user.banned) {
-          res.status(403).send("User is banned");
+          const reason = user.banReason || "none";
+          res.status(403).send(`User is banned. Reason: ${reason}`);
           return;
         }
 
@@ -258,7 +259,7 @@ export const login = async (req, res, next) => {
   }
 };
 
-export const generateInvite = (mail) => async (req, res, next) => {
+export const generateInvite = (mail) => async (req, res) => {
   if (process.env.SQ_ALLOW_REGISTER !== "invite" && req.userRole !== "admin") {
     res
       .status(403)
@@ -486,6 +487,7 @@ export const fetchUser = (tracker) => async (req, res, next) => {
             : {}),
           remainingInvites: 1,
           banned: 1,
+          banReason: 1,
           bonusPoints: 1,
           "totp.enabled": 1,
         },
@@ -792,9 +794,21 @@ export const banUser = async (req, res, next) => {
       return;
     }
 
+    // Extract the optional reason from the request body
+    // If it's empty, null, or undefined, fall back to "none"
+    const banReason =
+      req.body.reason && req.body.reason.trim() !== ""
+        ? req.body.reason.trim()
+        : "none";
+
     await User.findOneAndUpdate(
       { username: req.params.username },
-      { $set: { banned: true } }
+      {
+        $set: {
+          banned: true,
+          banReason: banReason, // Save the reason to the database
+        },
+      }
     );
 
     res.sendStatus(200);

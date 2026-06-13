@@ -45,13 +45,21 @@ const Login = () => {
         }),
       });
 
+      const reason = await res.text();
+
       if (res.status !== 200) {
-        const reason = await res.text();
-        if (reason === "One-time code required") setTotpRequired(true);
+        if (reason === "One-time code required") {
+          setTotpRequired(true);
+        }
+        // Handle the new ban format from the backend
+        else if (res.status === 403 && reason.startsWith("User is banned")) {
+          // You could redirect or just let the notification handle it
+          // The error thrown below will catch and display this reason
+        }
         throw new Error(reason);
       }
 
-      const { token, uid, username } = await res.json();
+      const { token, uid, username } = JSON.parse(reason); // Use the parsed JSON
 
       const expires = new Date();
       expires.setTime(expires.getTime() + 60 * 60 * 24 * 14 * 1000); // 14 days

@@ -1,7 +1,5 @@
 import React, { useContext } from "react";
 import getConfig from "next/config";
-import { useRouter } from "next/router";
-import qs from "qs";
 import { withAuthServerSideProps } from "../utils/withAuth";
 import SEO from "../components/SEO";
 import Text from "../components/Text";

@@ -8,6 +8,8 @@ const User = new mongoose.Schema({
   torrents: Object,
   created: Number,
   banned: Boolean,
+  banReason: String,
+
   role: String,
   invitedBy: mongoose.Schema.ObjectId,
   remainingInvites: Number,

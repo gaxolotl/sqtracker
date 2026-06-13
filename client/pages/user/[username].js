@@ -20,18 +20,33 @@ import Infobox from "../../components/Infobox";
 import TorrentList from "../../components/TorrentList";
 import Comment from "../../components/Comment";
 import Modal from "../../components/Modal";
+import Input from "../../components/Input";
 import { NotificationContext } from "../../components/Notifications";
 import LoadingContext from "../../utils/LoadingContext";
 import LocaleContext from "../../utils/LocaleContext";
 
 const User = ({ token, user, userRole }) => {
-  const [banned, setBanned] = useState(!!user.banned);
+  const [banned, setBanned] = useState(!!user?.banned);
+  const [banReason, setBanReason] = useState(user?.banReason || "none");
   const [showBanModal, setShowBanModal] = useState(false);
+  const [reasonInput, setReasonInput] = useState("");
+
+  React.useEffect(() => {
+    if (user) {
+      setBanned(!!user.banned);
+      setBanReason(user.banReason || "none");
+    }
+  }, [user?.username, user?.banned, user?.banReason]);
 
   const { addNotification } = useContext(NotificationContext);
   const { setLoading } = useContext(LoadingContext);
 
   const [cookies] = useCookies();
+  const { getLocaleString } = useContext(LocaleContext);
+
+  if (!user) {
+    return <Text p={5}>User data unavailable.</Text>;
+  }
 
   const {
     publicRuntimeConfig: {
@@ -45,9 +60,8 @@ const User = ({ token, user, userRole }) => {
   const downloadedBytes = prettyBytes(user.downloaded?.bytes || 0).split(" ");
   const uploadedBytes = prettyBytes(user.uploaded?.bytes || 0).split(" ");
 
-  const { getLocaleString } = useContext(LocaleContext);
-
-  const handleBanUser = async () => {
+  const handleBanUser = async (e) => {
+    if (e) e.preventDefault();
     setLoading(true);
 
     try {
@@ -56,8 +70,12 @@ const User = ({ token, user, userRole }) => {
         {
           method: "POST",
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+          body: JSON.stringify({
+            reason: banned ? "" : reasonInput.trim(),
+          }),
         }
       );
 
@@ -70,18 +88,21 @@ const User = ({ token, user, userRole }) => {
         "success",
         `${user.username} ${
           banned
-            ? [getLocaleString("userUnbanned")]
-            : [getLocaleString("userBanned")]
+            ? getLocaleString("userUnbanned")
+            : getLocaleString("userBanned")
         } ${getLocaleString("userSuccessfully")}`
       );
 
+      const finalReason = banned ? "none" : reasonInput.trim() || "none";
+      setBanReason(finalReason);
       setBanned((b) => !b);
+      setReasonInput("");
       setShowBanModal(false);
     } catch (e) {
       addNotification(
         "error",
         `${getLocaleString("userCouldNot")} ${
-          banned ? [getLocaleString("userUnban")] : [getLocaleString("userBan")]
+          banned ? getLocaleString("userUnban") : getLocaleString("userBan")
         } ${user.username}: ${e.message}`
       );
       console.error(e);
@@ -116,9 +137,14 @@ const User = ({ token, user, userRole }) => {
             </Text>
           )}
           {banned && (
-            <Text icon={NoEntry} iconColor="error" ml={4}>
-              {getLocaleString("userBanned")}
-            </Text>
+            <Box display="flex" alignItems="center">
+              <Text icon={NoEntry} iconColor="error" ml={4}>
+                {getLocaleString("userBanned")}
+              </Text>
+              <Text color="grey" fontSize={1} ml={2}>
+                ({getLocaleString("Reason") || "Reason"}: {banReason})
+              </Text>
+            </Box>
           )}
         </Box>
         {cookies.username === user.username && (
@@ -130,17 +156,19 @@ const User = ({ token, user, userRole }) => {
         )}
         {userRole === "admin" && cookies.username !== user.username && (
           <Button onClick={() => setShowBanModal(true)}>
-            {banned
-              ? [getLocaleString("userUnban")]
-              : [getLocaleString("userBan")]}{" "}
+            {banned ? getLocaleString("userUnban") : getLocaleString("userBan")}{" "}
             {user.username}
           </Button>
         )}
       </Box>
-      <Text color="grey" mb={5}>
-        {getLocaleString("userUserSince")}{" "}
-        {moment(user.created).format(`${getLocaleString("userUserSinceTime")}`)}
-      </Text>
+      <Box mb={5}>
+        <Text color="grey">
+          {getLocaleString("userUserSince")}{" "}
+          {moment(user.created).format(
+            `${getLocaleString("userUserSinceTime")}`
+          )}
+        </Text>
+      </Box>
       {userRole === "admin" && (
         <Infobox mb={5}>
           <Text
@@ -163,7 +191,7 @@ const User = ({ token, user, userRole }) => {
                 {user.emailVerified ? "yes" : "no"}
               </li>
             )}
-            {user.invitedBy && (
+            {user.invitedBy && user.invitedBy.username && (
               <li>
                 {getLocaleString("userInvitedBy")}:{" "}
                 <Link href={`/user/${user.invitedBy.username}`}>
@@ -182,6 +210,7 @@ const User = ({ token, user, userRole }) => {
                 {getLocaleString("accBonusPoints")}: {user.bonusPoints}
               </li>
             )}
+            {banned && <li>Ban Reason: {banReason}</li>}
           </ul>
         </Infobox>
       )}
@@ -318,27 +347,45 @@ const User = ({ token, user, userRole }) => {
       )}
       {showBanModal && (
         <Modal close={() => setShowBanModal(false)}>
-          <Text mb={4}>
-            {getLocaleString("userYouSureWant")}{" "}
-            {banned
-              ? [getLocaleString("userUnban")]
-              : [getLocaleString("userBan")]}{" "}
-            {getLocaleString("userThisUserQ")}
-          </Text>
-          <Box display="flex" justifyContent="flex-end">
-            <Button
-              onClick={() => setShowBanModal(false)}
-              variant="secondary"
-              mr={3}
-            >
-              {getLocaleString("accCancel")}
-            </Button>
-            <Button onClick={handleBanUser}>
+          <form onSubmit={handleBanUser}>
+            <Text mb={4}>
+              {getLocaleString("userYouSureWant")}{" "}
               {banned
-                ? [getLocaleString("userUnban")]
-                : [getLocaleString("userBan")]}
-            </Button>
-          </Box>
+                ? getLocaleString("userUnban")
+                : getLocaleString("userBan")}{" "}
+              {getLocaleString("userThisUserQ")}
+            </Text>
+
+            {!banned && (
+              <Box mb={4}>
+                <Input
+                  name="reason"
+                  label={
+                    getLocaleString("userBanReason") || "Optional Ban Reason"
+                  }
+                  placeholder='Leave blank for "none"'
+                  value={reasonInput}
+                  onChange={(e) => setReasonInput(e.target.value)}
+                />
+              </Box>
+            )}
+
+            <Box display="flex" justifyContent="flex-end">
+              <Button
+                type="button"
+                onClick={() => setShowBanModal(false)}
+                variant="secondary"
+                mr={3}
+              >
+                {getLocaleString("accCancel")}
+              </Button>
+              <Button type="submit" variant={banned ? "primary" : "danger"}>
+                {banned
+                  ? getLocaleString("userUnban")
+                  : getLocaleString("userBan")}
+              </Button>
+            </Box>
+          </form>
         </Modal>
       )}
     </>
@@ -361,19 +408,19 @@ export const getServerSideProps = withAuthServerSideProps(
         headers: fetchHeaders,
       });
 
-      if (
-        userRes.status === 403 &&
-        (await userRes.text()) === "User is banned"
-      ) {
-        throw "banned";
+      if (userRes.status === 403) {
+        const responseText = await userRes.text();
+        if (responseText.startsWith("User is banned")) {
+          throw "viewer_banned";
+        }
       }
 
-      if (userRes.status === 404) return { notFound: {} };
+      if (userRes.status === 404) return { notFound: true };
 
       const user = await userRes.json();
       return { props: { token, user, userRole: role } };
     } catch (e) {
-      if (e === "banned") throw "banned";
+      if (e === "viewer_banned") throw "viewer_banned";
       return { props: {} };
     }
   }

@@ -9,6 +9,7 @@ const Redirect = ({ path }) => {
   useEffect(() => {
     router.push(path);
   }, []);
+  // eslint-disable-next-line react/react-in-jsx-scope
   return <></>;
 };
 
@@ -17,10 +18,12 @@ export const withAuth = (Component, noRedirect = false) => {
     const [cookies] = useCookies();
 
     if (!cookies.token && !noRedirect) {
+      // eslint-disable-next-line react/react-in-jsx-scope
       return <Redirect path="/login" />;
     }
 
     return (
+      // eslint-disable-next-line react/react-in-jsx-scope
       <Component token={cookies.token} userId={cookies.userId} {...props} />
     );
   };
@@ -71,22 +74,32 @@ export const withAuthServerSideProps = (
         fetchHeaders["Authorization"] = `Bearer ${token}`;
       }
 
-      const { props: ssProps, notFound } = await getServerSideProps({
+      const result = await getServerSideProps({
         ...ctx,
         token,
         userId,
         fetchHeaders,
         isPublicAccess,
       });
-      return { props: { ...ssProps, token }, notFound };
+
+      if (result && result.notFound) {
+        return { notFound: true };
+      }
+
+      const ssProps = result?.props || {};
+      return { props: { ...ssProps, token } };
     } catch (e) {
-      if (e === "banned")
+      console.error("Error during server-side page render lifecycle:", e);
+
+      if (e === "viewer_banned") {
         return {
           redirect: {
             permanent: false,
             destination: "/logout",
           },
         };
+      }
+
       return { props: {} };
     }
   };

@@ -4,12 +4,11 @@ import Link from "next/link";
 import styled from "styled-components";
 import css from "@styled-system/css";
 import slugify from "slugify";
-import { withAuth, withAuthServerSideProps } from "../../utils/withAuth";
+import { withAuthServerSideProps } from "../../utils/withAuth";
 import SEO from "../../components/SEO";
 import Box from "../../components/Box";
 import Text from "../../components/Text";
 import LocaleContext from "../../utils/LocaleContext";
-import qs from "qs";
 
 const CategoryItem = styled.li(() =>
   css({

@@ -191,6 +191,7 @@ const Wiki = ({ page, allPages, token, userRole, slug }) => {
                   components={{
                     a({ href, ...props }) {
                       return href.startsWith("http") ? (
+                        // eslint-disable-next-line react/jsx-no-target-blank
                         <a href={href} target="_blank" {...props} />
                       ) : (
                         <Link href={href} passHref>
