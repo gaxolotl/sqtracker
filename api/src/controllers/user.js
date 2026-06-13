@@ -83,15 +83,16 @@ export const register = (mail) => async (req, res, next) => {
       }
     }
 
+    const normalizedUsername = req.body.username.toLowerCase();
     const created = Date.now();
 
     try {
       const user = await User.findOne({
-        $or: [{ email: req.body.email }, { username: req.body.username }],
+        $or: [{ email: req.body.email }, { username: normalizedUsername }],
       });
 
       if (!user) {
-        if (!/^[a-z0-9.]+$/i.test(req.body.username)) {
+        if (!/^[a-z0-9.]+$/i.test(normalizedUsername)) {
           res
             .status(400)
             .send("Username can only consist of letters, numbers, and “.”");
@@ -102,7 +103,7 @@ export const register = (mail) => async (req, res, next) => {
         const role = invite?.role || "user";
 
         const newUser = new User({
-          username: req.body.username,
+          username: normalizedUsername,
           email: req.body.email,
           password: hash,
           torrents: {},
@@ -193,7 +194,14 @@ export const register = (mail) => async (req, res, next) => {
 export const login = async (req, res, next) => {
   if (req.body.username && req.body.password) {
     try {
-      const user = await User.findOne({ username: req.body.username }).lean();
+      // ensure older case sensitive usernames can login still
+      let user = await User.findOne({ username: req.body.username }).lean();
+
+      if (!user) {
+        user = await User.findOne({
+          username: req.body.username.toLowerCase(),
+        }).lean();
+      }
 
       if (user) {
         if (user.banned) {
@@ -223,7 +231,7 @@ export const login = async (req, res, next) => {
               return;
             } else {
               await User.findOneAndUpdate(
-                { username: req.body.username },
+                { username: user.username },
                 { $pull: { "totp.backup": req.body.totp } }
               );
             }
