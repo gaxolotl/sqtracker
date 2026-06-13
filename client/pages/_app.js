@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import App from "next/app";
 import Head from "next/head";
 import Router, { useRouter } from "next/router";
@@ -154,8 +154,8 @@ const Loading = styled(LoaderAlt)`
   animation: ${spin} 1s linear infinite;
 `;
 
-const getLocaleString = (locale) => (key) =>
-  locales[locale][key] ?? locales.en[key];
+const getLocaleStringGlobal = (locale, key) =>
+  locales?.[locale]?.[key] ?? locales?.en?.[key] ?? key;
 
 const SqTracker = ({ Component, pageProps, initialTheme }) => {
   const [isMobile, setIsMobile] = useState(false);
@@ -166,11 +166,7 @@ const SqTracker = ({ Component, pageProps, initialTheme }) => {
   const [userStats, setUserStats] = useState();
 
   const router = useRouter();
-
-  const searchRef = useRef();
-
   const [cookies, setCookie] = useCookies();
-
   const { token } = cookies;
 
   const {
@@ -185,6 +181,8 @@ const SqTracker = ({ Component, pageProps, initialTheme }) => {
   } = getConfig();
 
   const [locale, setLocale] = useState(SQ_SITE_DEFAULT_LOCALE ?? "en");
+
+  const getLocaleString = (key) => getLocaleStringGlobal(locale, key);
 
   const allowThemeToggle = !Object.keys(SQ_CUSTOM_THEME ?? {}).some(
     (key) => key !== "primary"
@@ -254,8 +252,7 @@ const SqTracker = ({ Component, pageProps, initialTheme }) => {
     const form = new FormData(e.target);
     const query = form.get("query");
     if (query) {
-      searchRef.current.value = "";
-      searchRef.current.blur();
+      e.target.reset(); // Bypasses the faulty ref to clear input safely
       router.push(`/search/${encodeURIComponent(query)}`);
     }
   };
@@ -282,7 +279,7 @@ const SqTracker = ({ Component, pageProps, initialTheme }) => {
                 setCookie("locale", l, { path: "/" });
               },
               locales: Object.keys(locales),
-              getLocaleString: getLocaleString(locale),
+              getLocaleString: (key) => getLocaleStringGlobal(locale, key),
             }}
           >
             <NotificationsProvider>
@@ -336,7 +333,7 @@ const SqTracker = ({ Component, pageProps, initialTheme }) => {
                         iconWrapperProps={{ justifyContent: "flex-end" }}
                         fontSize={[0, 2]}
                       >
-                        Site-wide freeleech enabled!
+                        {getLocaleString("torrFreeleech")}!
                       </Text>
                     )}
                   </Box>
@@ -402,9 +399,9 @@ const SqTracker = ({ Component, pageProps, initialTheme }) => {
                       <Box as="form" onSubmit={handleSearch}>
                         <Input
                           name="query"
-                          placeholder="Search"
+                          placeholder={getLocaleString("indexSearch")}
                           maxWidth="300px"
-                          ref={searchRef}
+                          required
                         />
                       </Box>
                       {allowThemeToggle && (
