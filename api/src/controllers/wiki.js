@@ -1,7 +1,7 @@
 import slugify from "slugify";
 import Wiki from "../schema/wiki";
 
-const slugRegex = /^\/([a-z0-9-_\/])*/i;
+const slugRegex = /^\/([a-z0-9-_/])*/i;
 
 const formatSlug = (slug) => {
   if (!slug.startsWith("/")) slug = `/${slug}`;
@@ -63,7 +63,10 @@ export const createWiki = async (req, res, next) => {
 
 export const getWiki = async (req, res, next) => {
   try {
-    const slug = req.params[0];
+    let slug = req.params[0];
+    if (!slug || slug === "") {
+      slug = "/";
+    }
 
     let [page] = await Wiki.aggregate([
       {
