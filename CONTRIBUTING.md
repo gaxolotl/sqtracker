@@ -16,4 +16,4 @@ If you think a section of code is hard to understand without supporting comments
 
 ### CSS
 
-When working on the front-end, always make use of the existing theme. Do not style with arbitrary `px` values etc. unless absolutely necessary. Please read up on [styled-system](https://styled-system.com/) before making front-end changes.
+When working on the front-end, always make use of the existing theme. Do not style with arbitrary `px` values etc. unless absolutely necessary. Please read up on [styled-system](https://github.com/styled-system/styled-system) before making front-end changes.
