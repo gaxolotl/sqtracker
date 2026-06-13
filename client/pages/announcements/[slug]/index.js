@@ -60,7 +60,7 @@ const Announcement = ({ announcement, token, userRole }) => {
         throw new Error(reason);
       }
 
-      addNotification("success"`${getLocaleString("annAnnounceDelSuccess")}`);
+      addNotification("success", `${getLocaleString("annAnnounceDelSuccess")}`);
 
       router.push("/announcements");
     } catch (e) {
