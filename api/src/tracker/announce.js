@@ -97,8 +97,10 @@ const handleAnnounce = async (req, res) => {
   const uploaded = Number(params.uploaded);
   const downloaded = params.event === "started" ? 0 : Number(params.downloaded);
 
+  const peerId = params.peer_id;
   const prevProgressRecord = await Progress.findOne({
     userId: user._id,
+    peerId: peerId,
     infoHash,
   }).lean();
 
@@ -141,7 +143,7 @@ const handleAnnounce = async (req, res) => {
   }
 
   await Progress.findOneAndUpdate(
-    { userId: user._id, infoHash },
+    { userId: user._id, peerId: peerId, infoHash },
     {
       $set: {
         userId: user._id,

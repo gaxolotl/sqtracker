@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const Progress = new mongoose.Schema({
   infoHash: String,
   userId: mongoose.Schema.ObjectId,
+  peerId: String,
   uploaded: {
     session: Number,
     total: Number,
