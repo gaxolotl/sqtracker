@@ -9,7 +9,6 @@ import nodemailer from "nodemailer";
 import ratelimit from "express-rate-limit";
 import Tracker from "bittorrent-tracker";
 import * as Sentry from "@sentry/node";
-import * as Tracing from "@sentry/tracing";
 import config from "../../config";
 import validateConfig from "./utils/validateConfig";
 import createTrackerRoute from "./tracker/routes";
@@ -182,7 +181,7 @@ validateConfig(config).then(() => {
   app.use("/group", groupRoutes());
   app.use("/wiki", wikiRoutes());
 
-  app.use((err, req, res, next) => {
+  app.use((err, req, res) => {
     console.error(`[sq] error in ${req.url}:`, err);
     res.status(500).send(`sqtracker API error: ${err}`);
   });
