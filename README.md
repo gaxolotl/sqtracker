@@ -118,7 +118,7 @@ To add a new translation in your own language, create a new JSON file with your 
 
 The best place to start is to copy the `en.json` file and work through it, translating each English string.
 
-There is also an [inlang project](https://fink.inlang.com/github.com/tdjsnelling/sqtracker) to aid with translation.
+There is also an [inlang project](https://fink.inlang.com/github.com/gaxolotl/sqtracker) to aid with translation.
 
 ### Existing translations
 
@@ -132,6 +132,7 @@ There is also an [inlang project](https://fink.inlang.com/github.com/tdjsnelling
 | French             | [@Klaiment](https://github.com/Klaiment)             |
 | Spanish            | [@CerealKillerjs](https://github.com/CerealKillerjs) |
 | Italian            | [@NotLugozzi](https://github.com/NotLugozzi)         |
+| Bulgarian          | [@gaxolotl](https://github.com/gaxolotl)             |
 
 ## Screenshots
 
