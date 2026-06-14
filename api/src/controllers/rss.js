@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
-import User from "../schema/user";
-import Torrent from "../schema/torrent";
-import { embellishTorrentsWithTrackerScrape } from "./torrent";
+import User from "../schema/user.js";
+import Torrent from "../schema/torrent.js";
+import { embellishTorrentsWithTrackerScrape } from "./torrent.js";
 
 // prettier-ignore
 const getTorrentXml = (torrent, userId) => {

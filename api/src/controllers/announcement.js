@@ -1,6 +1,6 @@
 import slugify from "slugify";
-import Announcement from "../schema/announcement";
-import Comment from "../schema/comment";
+import Announcement from "../schema/announcement.js";
+import Comment from "../schema/comment.js";
 
 export const createAnnouncement = async (req, res, next) => {
   if (req.body.title && req.body.body) {

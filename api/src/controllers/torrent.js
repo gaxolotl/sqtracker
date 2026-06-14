@@ -1,14 +1,15 @@
 import bencode from "bencode";
 import crypto from "crypto";
 import mongoose from "mongoose";
-import { createNGrams, nGrams } from "mongoose-fuzzy-searching/helpers";
+import fuzzyHelpers from "mongoose-fuzzy-searching/helpers/index.js";
+const { createNGrams, nGrams } = fuzzyHelpers;
 import slugify from "slugify";
 import contentDisposition from "content-disposition";
-import Torrent from "../schema/torrent";
-import User from "../schema/user";
-import Comment from "../schema/comment";
-import Group from "../schema/group";
-import { createGroup, addToGroup, removeFromGroup } from "./group";
+import Torrent from "../schema/torrent.js";
+import User from "../schema/user.js";
+import Comment from "../schema/comment.js";
+import Group from "../schema/group.js";
+import { createGroup, addToGroup, removeFromGroup } from "./group.js";
 
 const urlReservedCharRegex = /[&$+,/:;=?@#<>\[\]{}|\\\^%]/g;
 

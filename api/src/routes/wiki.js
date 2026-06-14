@@ -4,7 +4,7 @@ import {
   getWiki,
   deleteWiki,
   updateWiki,
-} from "../controllers/wiki";
+} from "../controllers/wiki.js";
 
 const router = express.Router();
 

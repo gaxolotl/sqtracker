@@ -9,10 +9,10 @@ import nodemailer from "nodemailer";
 import ratelimit from "express-rate-limit";
 import Tracker from "bittorrent-tracker";
 import * as Sentry from "@sentry/node";
-import config from "../../config";
-import validateConfig from "./utils/validateConfig";
-import createTrackerRoute from "./tracker/routes";
-import auth from "./middleware/auth";
+import config from "../../config.js";
+import validateConfig from "./utils/validateConfig.js";
+import createTrackerRoute from "./tracker/routes.js";
+import auth from "./middleware/auth.js";
 import {
   accountRoutes,
   userRoutes,
@@ -23,17 +23,18 @@ import {
   requestRoutes,
   groupRoutes,
   wikiRoutes,
-} from "./routes";
+} from "./routes/index.js";
+
 import {
   register,
   login,
   initiatePasswordReset,
   finalisePasswordReset,
   verifyUserEmail,
-} from "./controllers/user";
-import { downloadTorrent } from "./controllers/torrent";
-import { rssFeed } from "./controllers/rss";
-import createAdminUser from "./setup/createAdminUser";
+} from "./controllers/user.js";
+import { downloadTorrent } from "./controllers/torrent.js";
+import { rssFeed } from "./controllers/rss.js";
+import createAdminUser from "./setup/createAdminUser.js";
 
 validateConfig(config).then(() => {
   if (process.env.SENTRY_DSN) {
