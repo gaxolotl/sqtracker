@@ -132,6 +132,7 @@ There is also an [inlang project](https://fink.inlang.com/github.com/tdjsnelling
 | French             | [@Klaiment](https://github.com/Klaiment)             |
 | Spanish            | [@CerealKillerjs](https://github.com/CerealKillerjs) |
 | Italian            | [@NotLugozzi](https://github.com/NotLugozzi)         |
+| Bulgarian          | [@gaxolotl](https://github.com/gaxolotl)             |
 
 ## Screenshots
 
