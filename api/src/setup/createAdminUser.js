@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import User from "../schema/user";
-import { sendVerificationEmail } from "../controllers/user";
+import User from "../schema/user.js";
+import { sendVerificationEmail } from "../controllers/user.js";
 
 const createAdminUser = async (mail) => {
   const existingAdmin = await User.findOne({ username: "admin" }).lean();

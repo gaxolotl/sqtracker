@@ -3,13 +3,13 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
-import User from "../schema/user";
-import Invite from "../schema/invite";
-import Progress from "../schema/progress";
-import { getTorrentsPage } from "./torrent";
-import { getUserRatio } from "../utils/ratio";
-import { getUserHitNRuns } from "../utils/hitnrun";
-import { BYTES_GB } from "../tracker/announce";
+import User from "../schema/user.js";
+import Invite from "../schema/invite.js";
+import Progress from "../schema/progress.js";
+import { getTorrentsPage } from "./torrent.js";
+import { getUserRatio } from "../utils/ratio.js";
+import { getUserHitNRuns } from "../utils/hitnrun.js";
+import { BYTES_GB } from "../tracker/announce.js";
 
 export const sendVerificationEmail = async (mail, address, token) => {
   await mail.sendMail({

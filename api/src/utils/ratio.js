@@ -1,4 +1,4 @@
-import Progress from "../schema/progress";
+import Progress from "../schema/progress.js";
 
 export const getUserRatio = async (_id) => {
   let totalUp = 0;

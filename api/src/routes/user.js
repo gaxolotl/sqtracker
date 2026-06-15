@@ -1,5 +1,5 @@
 import express from "express";
-import { banUser, fetchUser, unbanUser } from "../controllers/user";
+import { banUser, fetchUser, unbanUser } from "../controllers/user.js";
 
 const router = express.Router();
 

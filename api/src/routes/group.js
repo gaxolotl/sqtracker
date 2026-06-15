@@ -2,7 +2,7 @@ import express from "express";
 import {
   removeTorrentFromGroup,
   findFuzzyGroupMatches,
-} from "../controllers/group";
+} from "../controllers/group.js";
 
 const router = express.Router();
 

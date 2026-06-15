@@ -13,8 +13,8 @@ import {
   editTorrent,
   toggleBookmark,
   listTags,
-} from "../controllers/torrent";
-import { createReport } from "../controllers/moderation";
+} from "../controllers/torrent.js";
+import { createReport } from "../controllers/moderation.js";
 
 const router = express.Router();
 

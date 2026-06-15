@@ -14,28 +14,28 @@
     "@styled-icons/boxicons-regular": "^10.38.0",
     "@styled-icons/boxicons-solid": "^10.38.0",
     "@styled-system/css": "^5.1.5",
-    "copy-to-clipboard": "^3.3.1",
-    "dotenv": "^10.0.0",
-    "jsonwebtoken": "^8.5.1",
-    "lodash": "^4.17.21",
-    "moment": "^2.29.1",
+    "copy-to-clipboard": "^4.0.2",
+    "dotenv": "^17.4.2",
+    "jsonwebtoken": "^9.0.3",
+    "lodash": "^4.18.1",
+    "moment": "^2.30.1",
     "next": "12.2.5",
     "pluralize": "^8.0.0",
-    "polished": "^4.1.3",
+    "polished": "^4.3.1",
     "pretty-bytes": "^5.6.0",
-    "qs": "^6.11.0",
+    "qs": "^6.15.2",
     "react": "17.0.2",
     "react-cookie": "^4.1.1",
     "react-dom": "17.0.2",
     "react-dropzone": "^14.2.3",
     "react-markdown": "^7.1.2",
     "remark-gfm": "^3.0.1",
-    "slugify": "^1.6.5",
+    "slugify": "^1.6.9",
     "styled-components": "^5.3.3",
     "styled-system": "^5.1.5"
   },
   "devDependencies": {
-    "eslint": "7",
-    "eslint-config-next": "12.0.4"
+    "eslint": "10.5.0",
+    "eslint-config-next": "16.2.9"
   }
 }

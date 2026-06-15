@@ -1,7 +1,7 @@
-import Request from "../schema/request";
-import Comment from "../schema/comment";
-import Torrent from "../schema/torrent";
-import User from "../schema/user";
+import Request from "../schema/request.js";
+import Comment from "../schema/comment.js";
+import Torrent from "../schema/torrent.js";
+import User from "../schema/user.js";
 
 export const createRequest = async (req, res, next) => {
   if (req.body.title && req.body.body) {

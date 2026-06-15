@@ -1,5 +1,5 @@
 import slugify from "slugify";
-import Wiki from "../schema/wiki";
+import Wiki from "../schema/wiki.js";
 
 const slugRegex = /^\/([a-z0-9-_/])*/i;
 

@@ -1,10 +1,10 @@
 import qs from "qs";
 import bencode from "bencode";
-import User from "../schema/user";
-import Torrent from "../schema/torrent";
-import Progress from "../schema/progress";
-import { getUserRatio } from "../utils/ratio";
-import { getUserHitNRuns } from "../utils/hitnrun";
+import User from "../schema/user.js";
+import Torrent from "../schema/torrent.js";
+import Progress from "../schema/progress.js";
+import { getUserRatio } from "../utils/ratio.js";
+import { getUserHitNRuns } from "../utils/hitnrun.js";
 
 export const BYTES_GB = 1e9;
 

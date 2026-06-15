@@ -1,6 +1,6 @@
-import parseHttpRequest from "bittorrent-tracker/lib/server/parse-http";
+import parseHttpRequest from "bittorrent-tracker/lib/server/parse-http.js";
 import bencode from "bencode";
-import handleAnnounce from "./announce";
+import handleAnnounce from "./announce.js";
 
 const createTrackerRoute = (action, onRequest) => async (req, res) => {
   if (action === "announce") {
