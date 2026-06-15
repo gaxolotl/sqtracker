@@ -1,16 +1,11 @@
 # ■ sqtracker
 
-![Latest stable release](https://badgen.net/github/release/tdjsnelling/sqtracker/stable)
+![Latest stable release](https://badgen.net/github/release/gaxolotl/sqtracker/stable)
 [![License GPLv3](https://badgen.net/badge/license/GPLv3/blue)](./LICENSE)
-[![Client Docker image](https://badgen.net/badge/icon/sqtracker-client/blue?icon=docker&label)](https://github.com/tdjsnelling/sqtracker/pkgs/container/sqtracker-client)
-[![API Docker image](https://badgen.net/badge/icon/sqtracker-api/blue?icon=docker&label)](https://github.com/tdjsnelling/sqtracker/pkgs/container/sqtracker-api)
-[![Discord](https://badgen.net/discord/members/BEGXEk29Up)](https://discord.gg/BEGXEk29Up)
 
 sqtracker is a modern private BitTorrent tracker platform.
 
 It implements all of the features required to run a private (or public) tracker and does not focus on any one specific type of content. It is suitable for running a tracker site of any kind.
-
-Please join the [Discord server](https://discord.gg/BEGXEk29Up) for support and general chat.
 
 ## Features
 
