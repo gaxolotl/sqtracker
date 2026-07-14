@@ -12,3 +12,6 @@ letsencrypt/
 *.orig
 *.diff
 *.patch
+.pnp.cjs
+.pnp.loader.mjs
+.yarn/

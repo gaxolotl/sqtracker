@@ -1,5 +1,5 @@
 const { withSentryConfig } = require("@sentry/nextjs");
-const config = require("../config");
+const config = require("../config.js");
 const { version } = require("./package.json");
 
 const nextConfig = {
