@@ -19,7 +19,7 @@ const getIn = (obj, key, p = 0) => {
 
 const WrapLink = ({ href, target, children }) =>
   href ? (
-    <Link href={href} passHref>
+    <Link href={href}>
       <Text
         as="a"
         display="block"

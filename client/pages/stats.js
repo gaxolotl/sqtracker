@@ -1,5 +1,4 @@
 import React, { useContext } from "react";
-import getConfig from "next/config";
 import jwt from "jsonwebtoken";
 import styled from "styled-components";
 import css from "@styled-system/css";
@@ -23,42 +22,8 @@ const StyledTable = styled.table(() =>
 );
 
 const Stats = ({ stats, userRole }) => {
-  const { getLocaleString } = useContext(LocaleContext);
-  if (userRole !== "admin") {
-    return <Text>{getLocaleString("statYouNotPermission")}</Text>;
-  }
-
-  console.log(stats);
-
-  return (
-    <>
-      <SEO title={getLocaleString("statTrackerStat")} />
-      <Text as="h1" mb={5}>
-        {getLocaleString("statTrackerStat")}
-      </Text>
-      <StyledTable>
-        {Object.entries(stats).map(([key, value]) => {
-          const localeKey = key.charAt(0).toUpperCase() + key.slice(1);
-          return (
-            <tr key={`stat-${key}`}>
-              <td>{getLocaleString(`stat${localeKey}`)}</td>
-              <td>{value}</td>
-            </tr>
-          );
-        })}
-      </StyledTable>
-    </>
-  );
-};
-
-export const getServerSideProps = withAuthServerSideProps(
-  async ({ token, fetchHeaders }) => {
-    if (!token) return { props: {} };
-
-    const {
-      publicRuntimeConfig: { SQ_API_URL },
-      serverRuntimeConfig: { SQ_JWT_SECRET },
-    } = getConfig();
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+const SQ_JWT_SECRET = process.env.SQ_JWT_SECRET;
 
     const { role } = jwt.verify(token, SQ_JWT_SECRET);
 

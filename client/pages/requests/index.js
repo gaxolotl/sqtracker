@@ -1,5 +1,4 @@
 import React, { useContext } from "react";
-import getConfig from "next/config";
 import Link from "next/link";
 import jwt from "jsonwebtoken";
 import moment from "moment";
@@ -14,77 +13,8 @@ import List from "../../components/List";
 import LocaleContext from "../../utils/LocaleContext";
 
 const Requests = ({ requests = [] }) => {
-  const { getLocaleString } = useContext(LocaleContext);
-
-  return (
-    <>
-      <SEO title={getLocaleString("navRequests")} />
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        mb={5}
-      >
-        <Text as="h1">{getLocaleString("navRequests")}</Text>
-        <Link href="/requests/new" passHref>
-          <a>
-            <Button>{getLocaleString("reqCreateNew")}</Button>
-          </a>
-        </Link>
-      </Box>
-      <List
-        data={requests.map((request) => ({
-          ...request,
-          href: `/requests/${request.index}`,
-        }))}
-        columns={[
-          {
-            header: `${getLocaleString("reqTitle")}`,
-            accessor: "title",
-            cell: ({ value }) => <Text>{value}</Text>,
-            gridWidth: "1fr",
-          },
-          {
-            header: `${getLocaleString("reqPostedBy")}`,
-            accessor: "createdBy.username",
-            cell: ({ value }) => <Text>{value ?? "deleted user"}</Text>,
-            gridWidth: "0.5fr",
-          },
-          {
-            header: `${getLocaleString("reqFulfilled")}`,
-            accessor: "fulfilledBy",
-            cell: ({ value }) => (
-              <Box color={value ? "success" : "grey"}>
-                {value ? <Check size={24} /> : <X size={24} />}{" "}
-              </Box>
-            ),
-            gridWidth: "100px",
-          },
-          {
-            header: `${getLocaleString("accCreated")}`,
-            accessor: "created",
-            cell: ({ value }) => (
-              <Text>
-                {moment(value).format(`${getLocaleString("indexTime")}`)}
-              </Text>
-            ),
-            rightAlign: true,
-            gridWidth: "175px",
-          },
-        ]}
-      />
-    </>
-  );
-};
-
-export const getServerSideProps = withAuthServerSideProps(
-  async ({ token, fetchHeaders }) => {
-    if (!token) return { props: { requests: [] } };
-
-    const {
-      publicRuntimeConfig: { SQ_API_URL },
-      serverRuntimeConfig: { SQ_JWT_SECRET },
-    } = getConfig();
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+const SQ_JWT_SECRET = process.env.SQ_JWT_SECRET;
 
     const { role } = jwt.verify(token, SQ_JWT_SECRET);
 

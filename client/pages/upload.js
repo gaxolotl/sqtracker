@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useContext, useEffect } from "react";
-import getConfig from "next/config";
 import { useRouter } from "next/router";
 import styled from "styled-components";
 import css from "@styled-system/css";
@@ -53,151 +52,11 @@ export const TorrentFields = ({
   const [sources, setSources] = useState([]);
   const [tags, setTags] = useState(values?.tags?.split(",") ?? []);
 
-  const { getLocaleString } = useContext(LocaleContext);
-
-  useEffect(() => {
-    setSources(
-      category
-        ? categories[
-            Object.keys(categories).find(
-              (cat) => slugify(cat, { lower: true }) === category
-            )
-          ]
-        : []
-    );
-  }, [category]);
-
-  return (
-    <>
-      <Input
-        name="name"
-        label={getLocaleString("uploadName")}
-        defaultValue={values?.name}
-        onBlur={
-          typeof handleGroupSearch === "function"
-            ? handleGroupSearch
-            : undefined
-        }
-        mb={4}
-        required
-      />
-      {groupSuggestions}
-      {!!Object.keys(categories).length && (
-        <Select
-          name="category"
-          label={getLocaleString("uploadCategory")}
-          value={category}
-          onChange={(e) => {
-            setCategory(e.target.value);
-          }}
-          mb={4}
-          required
-        >
-          {Object.keys(categories).map((cat) => (
-            <option key={cat} value={slugify(cat, { lower: true })}>
-              {cat}
-            </option>
-          ))}
-        </Select>
-      )}
-      {!!sources.length && (
-        <Select
-          name="source"
-          label={getLocaleString("uploadSource")}
-          defaultValue={values?.source}
-          mb={4}
-          required
-        >
-          {sources.map((source) => (
-            <option key={source} value={slugify(source, { lower: true })}>
-              {source}
-            </option>
-          ))}
-        </Select>
-      )}
-      <MarkdownInput
-        name="description"
-        label={getLocaleString("uploadDescription")}
-        rows="10"
-        placeholder={getLocaleString("uploadMarkdownSupport")}
-        defaultValue={values?.description}
-        mb={4}
-        required
-      />
-      <Input
-        name="mediaInfo"
-        label={getLocaleString("uploadMediaInfo")}
-        rows="10"
-        defaultValue={values?.mediaInfo}
-        fontFamily="mono"
-        mb={4}
-      />
-      <WrapLabel as={Box} label={getLocaleString("uploadTags")} mb={4}>
-        <Box display="flex" flexWrap="wrap" m={-2}>
-          {tags.map((tag, i) => (
-            <Box key={`tag-${i}`} display="flex" m={2}>
-              <Input
-                value={tag}
-                onChange={(e) => {
-                  setTags((t) => {
-                    const curTags = [...t];
-                    curTags.splice(i, 1, e.target.value);
-                    return curTags;
-                  });
-                }}
-                width="138px"
-                mr={2}
-              />
-              <Button
-                onClick={() => {
-                  setTags((t) => {
-                    const curTags = [...t];
-                    curTags.splice(i, 1);
-                    return curTags;
-                  });
-                }}
-                type="button"
-                variant="secondary"
-                px={3}
-              >
-                <X size={20} />
-              </Button>
-            </Box>
-          ))}
-          <Button
-            onClick={() => setTags((t) => [...t, ""])}
-            type="button"
-            display="flex"
-            alignItems="center"
-            m={2}
-          >
-            <Plus size={18} />
-            <Text as="span" ml={3}>
-              {getLocaleString("uploadAddTag")}
-            </Text>
-          </Button>
-        </Box>
-      </WrapLabel>
-      <Input name="tags" value={tags.join(",")} display="none" />
-    </>
-  );
-};
-
-const Upload = ({ token, userId }) => {
-  const [torrentFile, setTorrentFile] = useState();
-  const [posterFile, setPosterFile] = useState();
-  const [dropError, setDropError] = useState("");
-  const [groupSuggestions, setGroupSuggestions] = useState([]);
-
-  const {
-    publicRuntimeConfig: {
-      SQ_BASE_URL,
-      SQ_API_URL,
-      SQ_TORRENT_CATEGORIES,
-      SQ_ALLOW_ANONYMOUS_UPLOAD,
-      SQ_EXTENSION_BLACKLIST = [],
-    },
-  } = getConfig();
+  const SQ_BASE_URL = process.env.NEXT_PUBLIC_SQ_BASE_URL;
+const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+const SQ_TORRENT_CATEGORIES = process.env.NEXT_PUBLIC_SQ_TORRENT_CATEGORIES;
+const SQ_ALLOW_ANONYMOUS_UPLOAD = process.env.NEXT_PUBLIC_SQ_ALLOW_ANONYMOUS_UPLOAD;
+const SQ_EXTENSION_BLACKLIST = [] = process.env.NEXT_PUBLIC_SQ_EXTENSION_BLACKLIST = [];
 
   const { addNotification } = useContext(NotificationContext);
   const { setLoading } = useContext(LoadingContext);

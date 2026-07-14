@@ -1,11 +1,9 @@
 import React from "react";
 import Head from "next/head";
-import getConfig from "next/config";
 
 const SEO = ({ title, noTitleTemplate }) => {
-  const {
-    publicRuntimeConfig: { SQ_SITE_NAME, SQ_SITE_DESCRIPTION },
-  } = getConfig();
+  const SQ_SITE_NAME = process.env.NEXT_PUBLIC_SQ_SITE_NAME;
+const SQ_SITE_DESCRIPTION = process.env.NEXT_PUBLIC_SQ_SITE_DESCRIPTION;
 
   const formattedTitle = title
     ? noTitleTemplate

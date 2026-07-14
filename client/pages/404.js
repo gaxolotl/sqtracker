@@ -15,8 +15,8 @@ const NotFound = () => {
       </Text>
       <Text>
         {getLocaleString("404PageDoesNotExist")}{" "}
-        <Link href="/" passHref>
-          <a>{getLocaleString("404ReturnHome")}</a>
+        <Link href="/">
+          {getLocaleString("404ReturnHome")}
         </Link>
         .
       </Text>

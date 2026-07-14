@@ -34,14 +34,14 @@ const Comment = ({ comment }) => {
         {comment.user?.username ? (
           <Text color="grey" icon={CommentIcon} mb={[2, 0]}>
             {getLocaleString("comCommentBy")}{" "}
-            <Link href={`/user/${comment.user.username}`} passHref>
+            <Link href={`/user/${comment.user.username}`}>
               <Text as="a">{comment.user.username}</Text>
             </Link>{" "}
             {getLocaleString("comOn")}{" "}
             {comment.type === "torrent" && (
               <>
                 {comment.torrent ? (
-                  <Link href={`/torrent/${comment.torrent.infoHash}`} passHref>
+                  <Link href={`/torrent/${comment.torrent.infoHash}`}>
                     <Text
                       as="a"
                       icon={File}
@@ -61,10 +61,7 @@ const Comment = ({ comment }) => {
             {comment.type === "announcement" && (
               <>
                 {comment.announcement ? (
-                  <Link
-                    href={`/announcements/${comment.announcement.slug}`}
-                    passHref
-                  >
+                  <Link href={`/announcements/${comment.announcement.slug}`}>
                     <Text
                       as="a"
                       icon={News}
@@ -84,7 +81,7 @@ const Comment = ({ comment }) => {
             {comment.type === "request" && (
               <>
                 {comment.request ? (
-                  <Link href={`/requests/${comment.request.index}`} passHref>
+                  <Link href={`/requests/${comment.request.index}`}>
                     <Text
                       as="a"
                       icon={CommentAdd}

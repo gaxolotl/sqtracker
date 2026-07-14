@@ -1,5 +1,4 @@
 import React, { useContext } from "react";
-import getConfig from "next/config";
 import { useRouter } from "next/router";
 import { useCookies } from "react-cookie";
 import jwt from "jsonwebtoken";
@@ -19,16 +18,8 @@ export const usernamePattern = "[A-Za-z0-9.]+";
 const Register = ({ token: inviteToken, tokenError }) => {
   const [, setCookie] = useCookies();
 
-  const { colors } = useContext(ThemeContext);
-  const { addNotification } = useContext(NotificationContext);
-  const { setLoading } = useContext(LoadingContext);
-  const { getLocaleString } = useContext(LocaleContext);
-
-  const router = useRouter();
-
-  const {
-    publicRuntimeConfig: { SQ_API_URL, SQ_ALLOW_REGISTER },
-  } = getConfig();
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+const SQ_ALLOW_REGISTER = process.env.NEXT_PUBLIC_SQ_ALLOW_REGISTER;
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -54,96 +45,8 @@ const Register = ({ token: inviteToken, tokenError }) => {
         throw new Error(reason);
       }
 
-      const { token, uid, username } = await res.json();
-
-      const expires = new Date();
-      expires.setTime(expires.getTime() + 60 * 60 * 24 * 14 * 1000); // 14 days
-      setCookie("token", token, { path: "/", expires });
-      setCookie("userId", uid, { path: "/", expires });
-      setCookie("username", username, { path: "/", expires });
-
-      addNotification(
-        "success",
-        `${getLocaleString("welcome")} ${form.get("username")}!`
-      );
-
-      router.push("/");
-    } catch (e) {
-      addNotification(
-        "error",
-        `${getLocaleString("registerFailed")}: ${e.message}`
-      );
-      console.error(e);
-    }
-
-    setLoading(false);
-  };
-
-  if (SQ_ALLOW_REGISTER !== "open" && SQ_ALLOW_REGISTER !== "invite") {
-    return (
-      <>
-        <SEO title={getLocaleString("register")} />
-        <Text as="h1" mb={5}>
-          {getLocaleString("register")}
-        </Text>
-        <p>{getLocaleString("registrationClosed")}.</p>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <SEO title={getLocaleString("register")} />
-      <Text as="h1" mb={5}>
-        {getLocaleString("register")}
-      </Text>
-      {!tokenError ? (
-        <form onSubmit={handleRegister}>
-          <Input
-            name="email"
-            type="email"
-            label={getLocaleString("email")}
-            mb={4}
-            required
-          />
-          <Input
-            name="username"
-            label={getLocaleString("username")}
-            placeholder={getLocaleString("usernameRules")}
-            pattern={usernamePattern}
-            mb={4}
-            required
-          />
-          <Input
-            name="password"
-            type="password"
-            label={getLocaleString("password")}
-            mb={4}
-            required
-          />
-          <Button>{getLocaleString("register")}</Button>
-        </form>
-      ) : (
-        <Box
-          bg={transparentize(0.8, colors.error)}
-          border="1px solid"
-          borderColor="error"
-          borderRadius={1}
-          p={4}
-        >
-          <Text>
-            {getLocaleString("registerFailed")}: {tokenError}
-          </Text>
-        </Box>
-      )}
-    </>
-  );
-};
-
-export const getServerSideProps = async ({ query: { token } }) => {
-  const {
-    serverRuntimeConfig: { SQ_JWT_SECRET, SQ_ALLOW_REGISTER },
-  } = getConfig();
+      const SQ_JWT_SECRET = process.env.SQ_JWT_SECRET;
+const SQ_ALLOW_REGISTER = process.env.SQ_ALLOW_REGISTER;
   if (SQ_ALLOW_REGISTER === "open") return { props: {} };
   if (!token && SQ_ALLOW_REGISTER === "invite")
     return { props: { tokenError: "Invite token not provided" } };

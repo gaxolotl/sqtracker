@@ -1,6 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
 import Link from "next/link";
-import getConfig from "next/config";
 import NextErrorComponent from "next/error";
 import * as Sentry from "@sentry/nextjs";
 import SEO from "../components/SEO";
@@ -10,9 +9,7 @@ import LocaleContext from "../utils/LocaleContext";
 const ErrorPage = () => {
   const [rateLimited, setRateLimited] = useState(false);
 
-  const {
-    publicRuntimeConfig: { SQ_API_URL },
-  } = getConfig();
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
 
   useEffect(() => {
     const checkRateLimit = async () => {
@@ -45,8 +42,8 @@ const ErrorPage = () => {
             {getLocaleString("errReportIt")}
           </a>
           . For now,{" "}
-          <Link href="/" passHref>
-            <a>{getLocaleString("404ReturnHome")}</a>
+          <Link href="/">
+            {getLocaleString("404ReturnHome")}
           </Link>
           .
         </Text>

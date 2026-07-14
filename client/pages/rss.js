@@ -1,13 +1,10 @@
 import React, { useContext } from "react";
-import getConfig from "next/config";
 import SEO from "../components/SEO";
 import Text from "../components/Text";
 import LocaleContext from "../utils/LocaleContext";
 
 const Rss = () => {
-  const {
-    publicRuntimeConfig: { SQ_BASE_URL },
-  } = getConfig();
+  const SQ_BASE_URL = process.env.NEXT_PUBLIC_SQ_BASE_URL;
 
   const { getLocaleString } = useContext(LocaleContext);
 

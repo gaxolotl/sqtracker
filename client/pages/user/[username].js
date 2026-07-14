@@ -1,5 +1,4 @@
 import React, { useState, useContext, useMemo } from "react";
-import getConfig from "next/config";
 import Link from "next/link";
 import { useCookies } from "react-cookie";
 import moment from "moment";
@@ -38,24 +37,10 @@ const User = ({ token, user, userRole }) => {
     }
   }, [user?.username, user?.banned, user?.banReason]);
 
-  const { addNotification } = useContext(NotificationContext);
-  const { setLoading } = useContext(LoadingContext);
-
-  const [cookies] = useCookies();
-  const { getLocaleString } = useContext(LocaleContext);
-
-  if (!user) {
-    return <Text p={5}>User data unavailable.</Text>;
-  }
-
-  const {
-    publicRuntimeConfig: {
-      SQ_TORRENT_CATEGORIES,
-      SQ_MINIMUM_RATIO,
-      SQ_MAXIMUM_HIT_N_RUNS,
-      SQ_API_URL,
-    },
-  } = getConfig();
+  const SQ_TORRENT_CATEGORIES = process.env.NEXT_PUBLIC_SQ_TORRENT_CATEGORIES;
+const SQ_MINIMUM_RATIO = process.env.NEXT_PUBLIC_SQ_MINIMUM_RATIO;
+const SQ_MAXIMUM_HIT_N_RUNS = process.env.NEXT_PUBLIC_SQ_MAXIMUM_HIT_N_RUNS;
+const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
 
   const downloadedBytes = prettyBytes(user.downloaded?.bytes || 0).split(" ");
   const uploadedBytes = prettyBytes(user.uploaded?.bytes || 0).split(" ");
@@ -149,9 +134,9 @@ const User = ({ token, user, userRole }) => {
         </Box>
         {cookies.username === user.username && (
           <Link href="/account">
-            <a>
-              <Button>{getLocaleString("accMyAccount")}</Button>
-            </a>
+
+            <Button>{getLocaleString("accMyAccount")}</Button>
+
           </Link>
         )}
         {userRole === "admin" && cookies.username !== user.username && (
@@ -195,7 +180,7 @@ const User = ({ token, user, userRole }) => {
               <li>
                 {getLocaleString("userInvitedBy")}:{" "}
                 <Link href={`/user/${user.invitedBy.username}`}>
-                  <a>{user.invitedBy.username}</a>
+                  {user.invitedBy.username}
                 </Link>
               </li>
             )}
@@ -396,10 +381,8 @@ export const getServerSideProps = withAuthServerSideProps(
   async ({ token, fetchHeaders, query: { username } }) => {
     if (!token) return { props: {} };
 
-    const {
-      publicRuntimeConfig: { SQ_API_URL },
-      serverRuntimeConfig: { SQ_JWT_SECRET },
-    } = getConfig();
+    const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+const SQ_JWT_SECRET = process.env.SQ_JWT_SECRET;
 
     const { role } = jwt.verify(token, SQ_JWT_SECRET);
 

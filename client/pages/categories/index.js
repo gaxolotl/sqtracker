@@ -1,5 +1,4 @@
 import React, { useContext } from "react";
-import getConfig from "next/config";
 import Link from "next/link";
 import styled from "styled-components";
 import css from "@styled-system/css";
@@ -26,86 +25,8 @@ const CategoryItem = styled.li(() =>
 );
 
 const Categories = ({ tags }) => {
-  const {
-    publicRuntimeConfig: { SQ_TORRENT_CATEGORIES },
-  } = getConfig();
-  const { getLocaleString } = useContext(LocaleContext);
-
-  return (
-    <>
-      <SEO title={getLocaleString("catCategories")} />
-      <Text as="h1" mb={5}>
-        {getLocaleString("catCategories")}
-      </Text>
-      <Box mb={5}>
-        {Object.keys(SQ_TORRENT_CATEGORIES).length ? (
-          <Box
-            as="ul"
-            display="grid"
-            gridTemplateColumns={["1fr", "repeat(4, 1fr)"]}
-            gridGap={4}
-            _css={{ pl: 0, listStyle: "none" }}
-          >
-            {Object.keys(SQ_TORRENT_CATEGORIES).map((category) => (
-              <CategoryItem key={category}>
-                <Link
-                  href={`/categories/${slugify(category, { lower: true })}`}
-                  passHref
-                >
-                  <a>{category}</a>
-                </Link>
-              </CategoryItem>
-            ))}
-          </Box>
-        ) : (
-          <Text color="grey">
-            {getLocaleString("catNoCategoryHaveBeenDefined")}
-          </Text>
-        )}
-      </Box>
-      <Text as="h1" mb={5}>
-        {getLocaleString("uploadTags")}
-      </Text>
-      {tags.length ? (
-        <Box display="flex" flexWrap="wrap" ml={-1} mt={-1}>
-          {tags.map((tag) => (
-            <Box
-              key={`tag-${tag}`}
-              bg="sidebar"
-              border="1px solid"
-              borderColor="border"
-              borderRadius={1}
-              m={1}
-            >
-              <Link href={`/tags/${tag}`} passHref>
-                <Text
-                  as="a"
-                  display="block"
-                  color="text"
-                  _css={{ "&:visited": { color: "text" } }}
-                  px={3}
-                  py={1}
-                >
-                  {tag}
-                </Text>
-              </Link>
-            </Box>
-          ))}
-        </Box>
-      ) : (
-        <Text color="grey">{getLocaleString("catNoTagsHaveBeenDefined")}</Text>
-      )}
-    </>
-  );
-};
-
-export const getServerSideProps = withAuthServerSideProps(
-  async ({ token, fetchHeaders, isPublicAccess }) => {
-    if (!token && !isPublicAccess) return { props: {} };
-
-    const {
-      publicRuntimeConfig: { SQ_API_URL },
-    } = getConfig();
+  const SQ_TORRENT_CATEGORIES = process.env.NEXT_PUBLIC_SQ_TORRENT_CATEGORIES;
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
 
     try {
       const tagsRes = await fetch(`${SQ_API_URL}/torrent/tags`, {

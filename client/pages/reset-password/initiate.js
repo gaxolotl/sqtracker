@@ -1,5 +1,4 @@
 import React, { useContext } from "react";
-import getConfig from "next/config";
 import SEO from "../../components/SEO";
 import Text from "../../components/Text";
 import Input from "../../components/Input";
@@ -9,13 +8,7 @@ import LoadingContext from "../../utils/LoadingContext";
 import LocaleContext from "../../utils/LocaleContext";
 
 const InitiatePasswordReset = () => {
-  const { addNotification } = useContext(NotificationContext);
-  const { setLoading } = useContext(LoadingContext);
-  const { getLocaleString } = useContext(LocaleContext);
-
-  const {
-    publicRuntimeConfig: { SQ_API_URL },
-  } = getConfig();
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
 
   const handleInitiate = async (e) => {
     e.preventDefault();

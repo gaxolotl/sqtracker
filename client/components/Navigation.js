@@ -1,5 +1,4 @@
 import React, { useContext, useState, useEffect } from "react";
-import getConfig from "next/config";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCookies } from "react-cookie";
@@ -26,72 +25,60 @@ import Text from "./Text";
 import Button from "./Button";
 import LocaleContext from "../utils/LocaleContext";
 
-const NavLink = styled.a(({ theme, href, highlights = [], mt = 0 }) => {
-  const router = useRouter();
-  const { asPath } = router;
-
-  const active =
-    href === "/"
-      ? asPath === "/"
-      : asPath.startsWith(href) ||
-        highlights.some((link) => asPath.startsWith(link));
-
-  return css({
+// 1. Properly defined NavLink with styled-system support
+const NavLink = styled.a(({ theme, highlights = [], mt = 0 }) =>
+  css({
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-end",
-    color: active ? "primary" : `${theme.colors.text} !important`,
-    background: active
-      ? `linear-gradient(to right, rgba(0, 0, 0, 0), ${theme.colors.border})`
-      : "transparent",
-    borderRight: "4px solid",
-    borderColor: active ? "primary" : "transparent",
-    fontWeight: 500,
-    lineHeight: 1,
-    px: 4,
-    py: 3,
-    mt,
-    svg: {
-      ml: 3,
-    },
-  });
-});
-
-const LocaleSelector = styled.select(() =>
-  css({
-    bg: "sidebar",
+    textDecoration: "none",
     color: "text",
-    border: 0,
-    fontSize: 0,
-    fontFamily: "body",
+    marginTop: mt,
+    paddingX: 4,
+    paddingY: 2,
     cursor: "pointer",
-    p: 0,
+    "&:hover": {
+      backgroundColor: "sidebarHover",
+    },
+    "& > svg": {
+      marginLeft: 3,
+    },
   })
 );
 
-const Navigation = ({ isMobile, menuIsOpen, setMenuIsOpen }) => {
-  const [cookies] = useCookies();
-  const [role, setRole] = useState("user");
+// Styled selector for the locale dropdown in the footer
+const LocaleSelector = styled.select`
+  background: transparent;
+  color: gray;
+  border: 1px solid;
+  border-color: ${({ theme }) => theme.colors.border || "#ccc"};
+  margin-top: 8px;
+  padding: 4px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+`;
+
+const Navigation = ({ menuIsOpen, setMenuIsOpen, isMobile }) => {
+  const theme = useContext(ThemeContext);
+  const router = useRouter();
+  const { asPath } = router;
+
+  // Retrieve cookies for authorization & current user info
+  const [cookies] = useCookies(["token", "username"]);
+  const { token, username } = cookies;
+
+  // Retrieve locale configuration
+  const { locale, setLocale, locales, getLocaleString } = useContext(LocaleContext);
+
+  const [role, setRole] = useState("");
   const [isServer, setIsServer] = useState(true);
 
-  const theme = useContext(ThemeContext);
-
-  const { locale, setLocale, locales, getLocaleString } =
-    useContext(LocaleContext);
-
-  const { asPath } = useRouter();
-
-  const { username, token } = cookies;
-
-  const {
-    publicRuntimeConfig: {
-      SQ_SITE_NAME,
-      SQ_API_URL,
-      SQ_ALLOW_REGISTER,
-      SQ_VERSION,
-      SQ_ALLOW_UNREGISTERED_VIEW,
-    },
-  } = getConfig();
+  const SQ_SITE_NAME = process.env.NEXT_PUBLIC_SQ_SITE_NAME;
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+  const SQ_ALLOW_REGISTER = process.env.NEXT_PUBLIC_SQ_ALLOW_REGISTER;
+  const SQ_VERSION = process.env.NEXT_PUBLIC_SQ_VERSION;
+  const SQ_ALLOW_UNREGISTERED_VIEW = process.env.NEXT_PUBLIC_SQ_ALLOW_UNREGISTERED_VIEW === "true";
 
   useEffect(() => {
     const getUserRole = async () => {
@@ -101,13 +88,16 @@ const Navigation = ({ isMobile, menuIsOpen, setMenuIsOpen }) => {
             Authorization: `Bearer ${token}`,
           },
         });
-        const role = await roleRes.text();
-        setRole(role);
-      } catch (e) {}
+        const roleData = await roleRes.text();
+        setRole(roleData);
+      } catch (e) {
+        console.error("Failed to fetch user role:", e);
+      }
     };
+    
     if (token) getUserRole();
     setIsServer(false);
-  }, [token]);
+  }, [token, SQ_API_URL]);
 
   useEffect(() => {
     if (isMobile && menuIsOpen) setMenuIsOpen(false);

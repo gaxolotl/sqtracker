@@ -1,5 +1,4 @@
 import React, { useContext, useState } from "react";
-import getConfig from "next/config";
 import { useRouter } from "next/router";
 import jwt from "jsonwebtoken";
 import slugify from "slugify";
@@ -17,82 +16,10 @@ import LocaleContext from "../../utils/LocaleContext";
 export const WikiFields = ({ values }) => {
   const [slugValue, setSlugValue] = useState(values?.slug);
 
-  const {
-    publicRuntimeConfig: { SQ_BASE_URL, SQ_ALLOW_UNREGISTERED_VIEW },
-  } = getConfig();
+  const SQ_BASE_URL = process.env.NEXT_PUBLIC_SQ_BASE_URL;
+const SQ_ALLOW_UNREGISTERED_VIEW = process.env.NEXT_PUBLIC_SQ_ALLOW_UNREGISTERED_VIEW;
 
-  const { getLocaleString } = useContext(LocaleContext);
-
-  console.log(values);
-
-  return (
-    <>
-      <Input
-        name="slug"
-        label={getLocaleString("wikiPath")}
-        value={slugValue}
-        onChange={(e) => setSlugValue(e.target.value)}
-        onBlur={(e) => {
-          let { value } = e.target;
-          if (!value.startsWith("/")) value = `/${value}`;
-          if (value.endsWith("/") && value !== "/") value = value.slice(0, -1);
-          const split = value.split("/");
-          const slugified = split.map((token) =>
-            slugify(token, { lower: true })
-          );
-          setSlugValue(slugified.join("/"));
-        }}
-        disabled={values?.slug === "/"}
-        mb={2}
-        required
-      />
-      <Text color="grey" fontSize={0} mb={4}>
-        {getLocaleString("wikiPageWillBeVisibleAt")} {SQ_BASE_URL}/wiki
-        {slugValue}
-      </Text>
-      <Input
-        name="title"
-        label={getLocaleString("reqTitle")}
-        defaultValue={values?.title}
-        mb={4}
-        required
-      />
-      <MarkdownInput
-        name="body"
-        label={getLocaleString("annBody")}
-        placeholder={getLocaleString("uploadMarkdownSupport")}
-        defaultValue={values?.body}
-        rows={20}
-        mb={4}
-        required
-      />
-      {SQ_ALLOW_UNREGISTERED_VIEW && (
-        <Checkbox
-          name="public"
-          label={getLocaleString("wikiAllowUnregisteredView")}
-          inputProps={{ defaultChecked: values?.public }}
-          mb={4}
-        />
-      )}
-    </>
-  );
-};
-
-const NewWiki = ({ token, userRole }) => {
-  const { getLocaleString } = useContext(LocaleContext);
-
-  if (userRole !== "admin") {
-    return <Text>{getLocaleString("statYouNotPermission")}</Text>;
-  }
-
-  const { addNotification } = useContext(NotificationContext);
-  const { setLoading } = useContext(LoadingContext);
-
-  const router = useRouter();
-
-  const {
-    publicRuntimeConfig: { SQ_API_URL },
-  } = getConfig();
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -153,9 +80,7 @@ const NewWiki = ({ token, userRole }) => {
 export const getServerSideProps = withAuthServerSideProps(async ({ token }) => {
   if (!token) return { props: {} };
 
-  const {
-    serverRuntimeConfig: { SQ_JWT_SECRET },
-  } = getConfig();
+  const SQ_JWT_SECRET = process.env.SQ_JWT_SECRET;
 
   const { role } = jwt.verify(token, SQ_JWT_SECRET);
 

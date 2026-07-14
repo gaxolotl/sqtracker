@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
-import getConfig from "next/config";
 import { useCookies } from "react-cookie";
 import getReqCookies from "./getReqCookies";
 
@@ -39,10 +38,8 @@ export const withAuthServerSideProps = (
   return async (ctx) => {
     let { token, userId } = getReqCookies(ctx.req);
 
-    const {
-      serverRuntimeConfig: { SQ_SERVER_SECRET },
-      publicRuntimeConfig: { SQ_ALLOW_UNREGISTERED_VIEW },
-    } = getConfig();
+    const SQ_SERVER_SECRET = process.env.SQ_SERVER_SECRET;
+    const SQ_ALLOW_UNREGISTERED_VIEW = process.env.NEXT_PUBLIC_SQ_ALLOW_UNREGISTERED_VIEW;
 
     const isPublicAccess = publicAccess && SQ_ALLOW_UNREGISTERED_VIEW && !token;
 

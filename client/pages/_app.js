@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import App from "next/app";
 import Head from "next/head";
 import Router, { useRouter } from "next/router";
-import getConfig from "next/config";
 import styled, {
   ThemeProvider,
   createGlobalStyle,
@@ -52,6 +51,18 @@ const getThemeColours = (themeName, customTheme = {}) => {
         border: customTheme.border ?? "#303236",
         text: customTheme.text ?? "#f8f8f8",
         grey: customTheme.grey ?? "#aaa",
+        error: "#f33",
+        success: "#44d944",
+        info: "#427ee1",
+      };
+    default:
+      return {
+        primary: customTheme.primary ?? "#f45d48",
+        background: customTheme.background ?? "#ffffff",
+        sidebar: customTheme.sidebar ?? "#f8f8f8",
+        border: customTheme.border ?? "#deebf1",
+        text: customTheme.text ?? "#202224",
+        grey: customTheme.grey ?? "#747474",
         error: "#f33",
         success: "#44d944",
         info: "#427ee1",
@@ -167,18 +178,16 @@ const SqTracker = ({ Component, pageProps, initialTheme }) => {
 
   const router = useRouter();
   const [cookies, setCookie] = useCookies();
-  const { token } = cookies;
+  
+  // Extract token directly from the react-cookie hook
+  const token = cookies.token;
 
-  const {
-    publicRuntimeConfig: {
-      SQ_CUSTOM_THEME,
-      SQ_SITE_WIDE_FREELEECH,
-      SQ_API_URL,
-      SQ_MINIMUM_RATIO,
-      SQ_MAXIMUM_HIT_N_RUNS,
-      SQ_SITE_DEFAULT_LOCALE,
-    },
-  } = getConfig();
+  const SQ_CUSTOM_THEME = process.env.NEXT_PUBLIC_SQ_CUSTOM_THEME;
+  const SQ_SITE_WIDE_FREELEECH = process.env.NEXT_PUBLIC_SQ_SITE_WIDE_FREELEECH === "true"; // Env variables are strings, parse to boolean safely
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+  const SQ_MINIMUM_RATIO = process.env.NEXT_PUBLIC_SQ_MINIMUM_RATIO;
+  const SQ_MAXIMUM_HIT_N_RUNS = process.env.NEXT_PUBLIC_SQ_MAXIMUM_HIT_N_RUNS;
+  const SQ_SITE_DEFAULT_LOCALE = process.env.NEXT_PUBLIC_SQ_SITE_DEFAULT_LOCALE;
 
   const [locale, setLocale] = useState(SQ_SITE_DEFAULT_LOCALE ?? "en");
 
@@ -201,25 +210,40 @@ const SqTracker = ({ Component, pageProps, initialTheme }) => {
 
     const query = window.matchMedia("(max-width: 767px)");
     setIsMobile(query.matches);
-    query.addEventListener("change", ({ matches }) => {
+    const handleQueryChange = ({ matches }) => {
       setIsMobile(matches);
-    });
+    };
+    query.addEventListener("change", handleQueryChange);
 
     if (allowThemeToggle) {
       const { theme: themeCookie } = cookies;
       const themeQuery = window.matchMedia("(prefers-color-scheme: light)");
       if (!themeCookie) setThemeAndSave(themeQuery.matches ? "light" : "dark");
-      themeQuery.addEventListener("change", ({ matches }) => {
+      
+      const handleThemeQueryChange = ({ matches }) => {
         setThemeAndSave(matches ? "light" : "dark");
-      });
+      };
+      themeQuery.addEventListener("change", handleThemeQueryChange);
     }
 
     const { locale: localeCookie } = cookies;
     if (Object.keys(locales).includes(localeCookie)) setLocale(localeCookie);
 
-    Router.events.on("routeChangeStart", () => setLoading(true));
-    Router.events.on("routeChangeComplete", () => setLoading(false));
-    Router.events.on("routeChangeError", () => setLoading(false));
+    const handleRouteStart = () => setLoading(true);
+    const handleRouteComplete = () => setLoading(false);
+    const handleRouteError = () => setLoading(false);
+
+    Router.events.on("routeChangeStart", handleRouteStart);
+    Router.events.on("routeChangeComplete", handleRouteComplete);
+    Router.events.on("routeChangeError", handleRouteError);
+
+    // Clean up event listeners on unmount
+    return () => {
+      query.removeEventListener("change", handleQueryChange);
+      Router.events.off("routeChangeStart", handleRouteStart);
+      Router.events.off("routeChangeComplete", handleRouteComplete);
+      Router.events.off("routeChangeError", handleRouteError);
+    };
   }, []);
 
   const fetchUserStats = async () => {
@@ -229,8 +253,12 @@ const SqTracker = ({ Component, pageProps, initialTheme }) => {
           Authorization: `Bearer ${token}`,
         },
       });
-      const stats = await res.json();
-      setUserStats(stats);
+      if (res.ok) {
+        const stats = await res.json();
+        setUserStats(stats);
+      } else {
+        setUserStats(undefined);
+      }
     } catch (e) {
       console.error(`could not fetch stats: ${e}`);
     }
@@ -441,7 +469,7 @@ const SqTracker = ({ Component, pageProps, initialTheme }) => {
 
 SqTracker.getInitialProps = async (appContext) => {
   const { theme } = appContext?.ctx?.req?.cookies || {};
-  const appInitialProps = App.getInitialProps(appContext);
+  const appInitialProps = await App.getInitialProps(appContext);
   return { initialTheme: theme, ...appInitialProps };
 };
 

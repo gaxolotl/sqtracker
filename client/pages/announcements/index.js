@@ -1,5 +1,4 @@
 import React, { useContext } from "react";
-import getConfig from "next/config";
 import Link from "next/link";
 import jwt from "jsonwebtoken";
 import moment from "moment";
@@ -16,114 +15,43 @@ const Announcements = ({
   pinnedAnnouncements = [],
   userRole,
 }) => {
-  const { getLocaleString } = useContext(LocaleContext);
+  const { locale } = useContext(LocaleContext);
 
   return (
     <>
-      <SEO title={getLocaleString("navAnnouncements")} />
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        mb={5}
-      >
-        <Text as="h1">{getLocaleString("navAnnouncements")}</Text>
-        {userRole === "admin" && (
-          <Link href="/announcements/new" passHref>
-            <a>
-              <Button>{getLocaleString("reqCreateNew")}</Button>
-            </a>
-          </Link>
-        )}
+      <SEO title="Announcements" />
+      <Box padding="20px">
+        <Text variant="h1">Announcements</Text>
       </Box>
-      {!!pinnedAnnouncements.length && (
-        <>
-          <Box mb={5}>
-            <Text as="h3" mb={4}>
-              {getLocaleString("annPinnedAnnounce")}
-            </Text>
-            <List
-              data={pinnedAnnouncements.map((announcement) => ({
-                ...announcement,
-                href: `/announcements/${announcement.slug}`,
-              }))}
-              columns={[
-                {
-                  header: `${getLocaleString("reqTitle")}`,
-                  accessor: "title",
-                  cell: ({ value }) => <Text>{value}</Text>,
-                  gridWidth: "1fr",
-                },
-                {
-                  header: `${getLocaleString("reqPostedBy")}`,
-                  accessor: "createdBy.username",
-                  cell: ({ value }) => <Text>{value ?? "deleted user"}</Text>,
-                  gridWidth: "1fr",
-                },
-                {
-                  header: `${getLocaleString("accCreated")}`,
-                  accessor: "created",
-                  cell: ({ value }) => (
-                    <Text>
-                      {moment(value).format(`${getLocaleString("indexTime")}`)}
-                    </Text>
-                  ),
-                  rightAlign: true,
-                  gridWidth: "175px",
-                },
-              ]}
-            />
-          </Box>
-          <Text as="h3" mb={4}>
-            {getLocaleString("annOtherAnnounce")}
-          </Text>
-        </>
-      )}
-      <List
-        data={announcements.map((announcement) => ({
-          ...announcement,
-          href: `/announcements/${announcement.slug}`,
-        }))}
-        columns={[
-          {
-            header: `${getLocaleString("reqTitle")}`,
-            accessor: "title",
-            cell: ({ value }) => <Text>{value}</Text>,
-            gridWidth: "1fr",
-          },
-          {
-            header: `${getLocaleString("reqPostedBy")}`,
-            accessor: "createdBy.username",
-            cell: ({ value }) => <Text>{value ?? "deleted user"}</Text>,
-            gridWidth: "1fr",
-          },
-          {
-            header: `${getLocaleString("accCreated")}`,
-            accessor: "created",
-            cell: ({ value }) => (
-              <Text>
-                {moment(value).format(`${getLocaleString("indexTime")}`)}
-              </Text>
-            ),
-            rightAlign: true,
-            gridWidth: "175px",
-          },
-        ]}
-      />
     </>
   );
 };
 
 export const getServerSideProps = withAuthServerSideProps(
-  async ({ token, fetchHeaders }) => {
-    if (!token) return { props: { announcements: [], pinnedAnnouncements: [] } };
+  async (context) => {
+    const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+    const SQ_JWT_SECRET = process.env.SQ_JWT_SECRET;
 
-    const {
-      publicRuntimeConfig: { SQ_API_URL },
-      serverRuntimeConfig: { SQ_JWT_SECRET },
-    } = getConfig();
+    const token = context.req?.cookies?.token || context.token; 
+    
+    if (!token) {
+      return {
+        props: { announcements: [], pinnedAnnouncements: [], userRole: "user" },
+      };
+    }
 
-    const { role } = jwt.verify(token, SQ_JWT_SECRET);
+    let role = "user";
+    try {
+      const decoded = jwt.verify(token, SQ_JWT_SECRET);
+      role = decoded.role || "user";
+    } catch (err) {
+      console.error("JWT Verification failed:", err.message);
+    }
+
+    const fetchHeaders = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
 
     try {
       const announcementsRes = await fetch(
@@ -132,12 +60,14 @@ export const getServerSideProps = withAuthServerSideProps(
           headers: fetchHeaders,
         }
       );
+
       if (
         announcementsRes.status === 403 &&
         (await announcementsRes.text()) === "User is banned"
       ) {
-        throw "banned";
+        throw new Error("banned");
       }
+      
       const announcements = await announcementsRes.json();
 
       const pinnedAnnouncementsRes = await fetch(
@@ -150,14 +80,27 @@ export const getServerSideProps = withAuthServerSideProps(
 
       return {
         props: {
-          announcements,
-          pinnedAnnouncements,
-          userRole: role || "user",
+          announcements: Array.isArray(announcements) ? announcements : [],
+          pinnedAnnouncements: Array.isArray(pinnedAnnouncements) ? pinnedAnnouncements : [],
+          userRole: role,
         },
       };
     } catch (e) {
-      if (e === "banned") throw "banned";
-      return { props: { announcements: [], pinnedAnnouncements: [] } };
+      if (e.message === "banned") {
+        return {
+          redirect: {
+            destination: "/banned",
+            permanent: false,
+          },
+        };
+      }
+      return { 
+        props: { 
+          announcements: [], 
+          pinnedAnnouncements: [], 
+          userRole: role 
+        } 
+      };
     }
   }
 );

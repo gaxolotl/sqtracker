@@ -1,5 +1,4 @@
 import React, { useContext } from "react";
-import getConfig from "next/config";
 import { useRouter } from "next/router";
 import jwt from "jsonwebtoken";
 import SEO from "../../../components/SEO";
@@ -14,20 +13,7 @@ import MarkdownInput from "../../../components/MarkdownInput";
 import LocaleContext from "../../../utils/LocaleContext";
 
 const EditAnnouncement = ({ announcement, token, userRole }) => {
-  const { getLocaleString } = useContext(LocaleContext);
-
-  if (userRole !== "admin") {
-    return <Text>{getLocaleString("statYouNotPermission")}</Text>;
-  }
-
-  const { addNotification } = useContext(NotificationContext);
-  const { setLoading } = useContext(LoadingContext);
-
-  const router = useRouter();
-
-  const {
-    publicRuntimeConfig: { SQ_API_URL },
-  } = getConfig();
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -122,10 +108,8 @@ export const getServerSideProps = withAuthServerSideProps(
   async ({ token, fetchHeaders, query: { slug } }) => {
     if (!token) return { props: {} };
 
-    const {
-      publicRuntimeConfig: { SQ_API_URL },
-      serverRuntimeConfig: { SQ_JWT_SECRET },
-    } = getConfig();
+    const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+const SQ_JWT_SECRET = process.env.SQ_JWT_SECRET;
 
     const { role } = jwt.verify(token, SQ_JWT_SECRET);
 

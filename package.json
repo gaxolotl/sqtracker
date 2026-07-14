@@ -21,11 +21,15 @@
   },
   "dependencies": {
     "content-disposition": "^2.0.1",
-    "eslint": "^10.7.0",
+    "eslint": "10.7.0",
     "eslint-config-next": "^16.2.10",
+    "next": "^16.2.10",
     "pretty-bytes": "^7.1.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "react-dropzone": "^17.0.0",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "styled-components": "^6.4.3"
   }
 }

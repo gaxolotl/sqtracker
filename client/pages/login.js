@@ -1,5 +1,4 @@
 import React, { useContext, useState } from "react";
-import getConfig from "next/config";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useCookies } from "react-cookie";
@@ -17,15 +16,7 @@ const Login = () => {
 
   const [, setCookie] = useCookies();
 
-  const { addNotification } = useContext(NotificationContext);
-  const { setLoading } = useContext(LoadingContext);
-  const { getLocaleString } = useContext(LocaleContext);
-
-  const router = useRouter();
-
-  const {
-    publicRuntimeConfig: { SQ_API_URL },
-  } = getConfig();
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -110,7 +101,7 @@ const Login = () => {
         )}
         <Button>{getLocaleString("logIn")}</Button>
       </form>
-      <Link href="/reset-password/initiate" passHref>
+      <Link href="/reset-password/initiate">
         <Text as="a" display="inline-block" mt={5}>
           {getLocaleString("resetPassword")}
         </Text>

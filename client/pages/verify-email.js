@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from "react";
-import getConfig from "next/config";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { ThemeContext } from "styled-components";
@@ -12,14 +11,7 @@ import LocaleContext from "../utils/LocaleContext";
 const VerifyEmail = () => {
   const [tokenError, setTokenError] = useState();
 
-  const { colors } = useContext(ThemeContext);
-
-  const router = useRouter();
-  const { token } = router.query;
-
-  const {
-    publicRuntimeConfig: { SQ_API_URL },
-  } = getConfig();
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
 
   const { getLocaleString } = useContext(LocaleContext);
 
@@ -63,8 +55,8 @@ const VerifyEmail = () => {
         <>
           <Text>
             {getLocaleString("veEmailAddressVerifiedSuccess")}{" "}
-            <Link href="/login" passHref>
-              <a>{getLocaleString("logIn")}</a>
+            <Link href="/login">
+              {getLocaleString("logIn")}
             </Link>
           </Text>
         </>

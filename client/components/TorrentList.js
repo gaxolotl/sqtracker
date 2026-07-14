@@ -1,5 +1,4 @@
 import React, { useContext, useEffect } from "react";
-import getConfig from "next/config";
 import { useRouter } from "next/router";
 import moment from "moment";
 import slugify from "slugify";
@@ -30,9 +29,7 @@ const TorrentList = ({
   fetchPath,
   token,
 }) => {
-  const {
-    publicRuntimeConfig: { SQ_SITE_WIDE_FREELEECH },
-  } = getConfig();
+  const SQ_SITE_WIDE_FREELEECH = process.env.NEXT_PUBLIC_SQ_SITE_WIDE_FREELEECH;
 
   const router = useRouter();
   const {

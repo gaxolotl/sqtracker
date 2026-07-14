@@ -1,5 +1,4 @@
 import React, { useContext } from "react";
-import getConfig from "next/config";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { withAuthServerSideProps } from "../utils/withAuth";
@@ -15,60 +14,44 @@ import { News } from "@styled-icons/boxicons-regular/News";
 import moment from "moment/moment";
 import LocaleContext from "../utils/LocaleContext";
 
+// Define the PublicLanding component used as a fallback for guest users
 const PublicLanding = ({ name, allowRegister }) => {
-  const { getLocaleString } = useContext(LocaleContext);
   return (
-    <Box
-      minHeight="calc(100vh - 173px)"
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      flexDirection="column"
-    >
-      <Text as="h1" fontSize={6} textAlign="center" lineHeight={1.2}>
-        {name}
-      </Text>
-      <Box display="flex" mt={4}>
-        <Box>
-          <Link href="/login">
-            <a>{getLocaleString("logIn")}</a>
-          </Link>
-        </Box>
-        {allowRegister && (
-          <Box ml={4}>
-            <Link href="/register">
-              <a>{getLocaleString("register")}</a>
-            </Link>
-          </Box>
-        )}
-      </Box>
+    <Box padding="40px" textAlign="center">
+      <Text variant="h1">Welcome to {name}</Text>
+      {allowRegister === "true" && (
+        <Link href="/register" passHref>
+          <Button>Register an Account</Button>
+        </Link>
+      )}
+      <Link href="/login" passHref>
+        <Button style={{ marginLeft: "10px" }}>Log In</Button>
+      </Link>
     </Box>
   );
 };
 
-const Index = ({
+const Index = ({ 
+  latestTorrents = [], 
+  latestAnnouncement = null, 
+  emailVerified, 
   token,
-  latestTorrents,
-  latestAnnouncement,
-  emailVerified,
+  categories 
 }) => {
-  const {
-    publicRuntimeConfig: {
-      SQ_SITE_NAME,
-      SQ_ALLOW_REGISTER,
-      SQ_TORRENT_CATEGORIES,
-    },
-  } = getConfig();
+  const SQ_SITE_NAME = process.env.NEXT_PUBLIC_SQ_SITE_NAME;
+  const SQ_ALLOW_REGISTER = process.env.NEXT_PUBLIC_SQ_ALLOW_REGISTER;
 
   const router = useRouter();
 
-  if (!token)
+  // If no token, render the landing page for guest visitors
+  if (!token) {
     return (
       <>
-        <SEO />
+        <SEO title={SQ_SITE_NAME} />
         <PublicLanding name={SQ_SITE_NAME} allowRegister={SQ_ALLOW_REGISTER} />
       </>
     );
+  }
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -77,108 +60,76 @@ const Index = ({
     if (query) router.push(`/search/${encodeURIComponent(query)}`);
   };
 
-  const { getLocaleString } = useContext(LocaleContext);
-
   return (
     <>
-      <SEO title={getLocaleString("navHome")} />
-      <Text as="h1" mb={5}>
-        {getLocaleString("navHome")}
-      </Text>
-      {!emailVerified && (
-        <Infobox mb={5}>
-          <Text icon={ErrorCircle} iconColor="error">
-            {getLocaleString("indexText1")}
-          </Text>
-        </Infobox>
-      )}
-      {latestAnnouncement && (
-        <Link href={`/announcements/${latestAnnouncement.slug}`} passHref>
-          <Box
-            as="a"
-            _css={{
-              "&:hover": {
-                textDecoration: "none",
-                h2: { textDecoration: "underline" },
-              },
-            }}
-          >
-            <Infobox mb={5}>
-              <Text
-                icon={News}
-                iconColor="primary"
-                color="grey"
-                fontWeight={600}
-                fontSize={1}
-                _css={{ textTransform: "uppercase" }}
-                mb={3}
-              >
-                {getLocaleString("indexLatestAnnounce")}
-              </Text>
-              <Text as="h2" fontSize={3} mb={3}>
-                {latestAnnouncement.title}
-              </Text>
-              <Text color="grey">
-                {getLocaleString("reqPosted")}{" "}
-                {moment(latestAnnouncement.created).format(
-                  `${getLocaleString("indexTime")}`
-                )}{" "}
-                {getLocaleString("reqBy")}{" "}
-                {latestAnnouncement.createdBy?.username ? (
-                  <Link
-                    href={`/user/${latestAnnouncement.createdBy.username}`}
-                    passHref
-                  >
-                    <a>{latestAnnouncement.createdBy.username}</a>
-                  </Link>
-                ) : (
-                  "deleted user"
-                )}
-              </Text>
-            </Infobox>
+      <SEO title="Home" />
+      <Box padding="20px">
+        {/* Email verification warning banner if they aren't verified */}
+        {!emailVerified && (
+          <Infobox icon={<ErrorCircle size="24" />} variant="warning" margin="0 0 20px 0">
+            Please verify your email address to unlock all site features.
+          </Infobox>
+        )}
+
+        {/* Latest Announcement */}
+        {latestAnnouncement && (
+          <Infobox icon={<News size="24" />} variant="info" margin="0 0 20px 0">
+            <Text bold>{latestAnnouncement.title}</Text>
+            <Text size="sm">{moment(latestAnnouncement.createdAt).fromNow()}</Text>
+            <Text margin="10px 0 0 0">{latestAnnouncement.content}</Text>
+          </Infobox>
+        )}
+
+        {/* Search Bar */}
+        <form onSubmit={handleSearch}>
+          <Box display="flex" margin="0 0 20px 0">
+            <Input name="query" placeholder="Search torrents..." style={{ marginRight: "10px" }} />
+            <Button type="submit">Search</Button>
           </Box>
-        </Link>
-      )}
-      <Box as="form" onSubmit={handleSearch} display="flex" mb={5}>
-        <Input
-          placeholder={getLocaleString("indexSearchTorrents")}
-          name="query"
-          mr={3}
-          required
-        />
-        <Button>{getLocaleString("indexSearch")}</Button>
+        </form>
+
+        {/* Torrents Display */}
+        <Text variant="h2" margin="0 0 10px 0">Latest Uploads</Text>
+        <TorrentList torrents={latestTorrents} categories={categories} />
       </Box>
-      <Text as="h2" mb={4}>
-        {getLocaleString("indexLatestTorrents")}
-      </Text>
-      <TorrentList
-        torrents={latestTorrents}
-        categories={SQ_TORRENT_CATEGORIES}
-      />
     </>
   );
 };
 
 export const getServerSideProps = withAuthServerSideProps(
-  async ({ token, fetchHeaders }) => {
-    if (!token) return { props: {} };
+  async (context) => {
+    const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+    const SQ_TORRENT_CATEGORIES = process.env.NEXT_PUBLIC_SQ_TORRENT_CATEGORIES;
 
-    const {
-      publicRuntimeConfig: { SQ_API_URL },
-    } = getConfig();
+    // Safely retrieve user token from Next.js server context
+    const token = context.req?.cookies?.token || context.token || null;
+
+    if (!token) {
+      return {
+        props: { token: null },
+      };
+    }
+
+    const fetchHeaders = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
 
     try {
+      // 1. Fetch latest torrents
       const latestTorrentsRes = await fetch(`${SQ_API_URL}/torrent/latest`, {
         headers: fetchHeaders,
       });
+
       if (
         latestTorrentsRes.status === 403 &&
         (await latestTorrentsRes.text()) === "User is banned"
       ) {
-        throw "banned";
+        throw new Error("banned");
       }
       const latestTorrents = await latestTorrentsRes.json();
 
+      // 2. Fetch latest announcement
       const latestAnnouncementRes = await fetch(
         `${SQ_API_URL}/announcements/latest`,
         {
@@ -190,21 +141,45 @@ export const getServerSideProps = withAuthServerSideProps(
         latestAnnouncement = await latestAnnouncementRes.json();
       }
 
+      // 3. Fetch verification status
       const verifiedRes = await fetch(`${SQ_API_URL}/account/get-verified`, {
         headers: fetchHeaders,
       });
       const emailVerified = await verifiedRes.json();
 
+      // Parse environment variables like categories for list rendering
+      const categories = SQ_TORRENT_CATEGORIES ? JSON.parse(SQ_TORRENT_CATEGORIES) : [];
+
       return {
-        props: { latestTorrents, latestAnnouncement, emailVerified, token },
+        props: { 
+          latestTorrents: Array.isArray(latestTorrents) ? latestTorrents : [], 
+          latestAnnouncement, 
+          emailVerified, 
+          token,
+          categories
+        },
       };
     } catch (e) {
       console.error(e);
-      if (e === "banned") throw "banned";
-      return { props: {} };
+      if (e.message === "banned") {
+        return {
+          redirect: {
+            destination: "/banned",
+            permanent: false,
+          },
+        };
+      }
+      return { 
+        props: { 
+          latestTorrents: [], 
+          latestAnnouncement: null, 
+          emailVerified: false, 
+          token 
+        } 
+      };
     }
   },
-  false,
+  false, // options standardly used in custom auth wrappers
   true
 );
 

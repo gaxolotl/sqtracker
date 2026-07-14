@@ -8,17 +8,18 @@ const nextConfig = {
   compiler: {
     styledComponents: true,
   },
-  publicRuntimeConfig: {
-    ...config.envs,
-    SQ_VERSION: version,
-  },
-  serverRuntimeConfig: {
-    ...config.envs,
-    ...config.secrets,
-  },
+//  publicRuntimeConfig: {
+//    ...config.envs,
+//    SQ_VERSION: version,
+//  },
+//  serverRuntimeConfig: {
+//    ...config.envs,
+//    ...config.secrets,
+//  },
   sentry: {
     hideSourceMaps: true,
   },
+  turbopack: {}
 };
 
 const sentryWebpackPluginOptions = {

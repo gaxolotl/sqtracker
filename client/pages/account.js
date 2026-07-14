@@ -1,5 +1,4 @@
 import React, { useState, useContext } from "react";
-import getConfig from "next/config";
 import { useRouter } from "next/router";
 import moment from "moment";
 import copy from "copy-to-clipboard";
@@ -28,79 +27,13 @@ const BuyItem = ({ text, cost, wallet, handleBuy }) => {
   const [amount, setAmount] = useState(1);
   const unavailable = cost === 0;
   const cannotAfford = amount * cost > wallet;
-  const { getLocaleString } = useContext(LocaleContext);
-  return (
-    <Box
-      display="flex"
-      flexDirection={["column", "row"]}
-      alignItems={["flex-start", "center"]}
-      justifyContent="space-between"
-      border="1px solid"
-      borderColor="border"
-      borderRadius={1}
-      p={3}
-      pl={4}
-    >
-      <Text mb={[3, 0]} _css={{ whiteSpace: "nowrap" }}>
-        {text}
-      </Text>
-      <Box as="form" onSubmit={handleBuy} width="100%">
-        <Box display="flex" alignItems="center" justifyContent="flex-end">
-          <Text color="grey" mr={4}>
-            {unavailable
-              ? [getLocaleString("accNotAvailableToBuy")]
-              : `Cost: ${amount * cost} points`}
-          </Text>
-          <Input
-            type="number"
-            name="amount"
-            value={amount}
-            onChange={(e) => setAmount(parseInt(e.currentTarget.value))}
-            min={1}
-            max={Math.floor(wallet / cost)}
-            width="100px"
-            disabled={unavailable || cannotAfford}
-            mr={3}
-          />
-          <Button disabled={unavailable || cannotAfford}>
-            {getLocaleString("accBuy")}
-          </Button>
-        </Box>
-      </Box>
-    </Box>
-  );
-};
-
-const Account = ({ token, invites = [], user, userRole }) => {
-  const [remainingInvites, setRemainingInvites] = useState(
-    user.remainingInvites ?? 0
-  );
-  const [invitesList, setInvitesList] = useState(invites);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [bonusPoints, setBonusPoints] = useState(user.bonusPoints ?? 0);
-  const [totpEnabled, setTotpEnabled] = useState(user.totp.enabled);
-  const [totpQrData, setTotpQrData] = useState();
-  const [totpBackupCodes, setTotpBackupCodes] = useState();
-  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
-
-  const { addNotification } = useContext(NotificationContext);
-  const { setLoading } = useContext(LoadingContext);
-
-  const { getLocaleString } = useContext(LocaleContext);
-
-  const theme = useContext(ThemeContext);
-
-  const {
-    publicRuntimeConfig: {
-      SQ_API_URL,
-      SQ_BP_EARNED_PER_GB,
-      SQ_BP_EARNED_PER_FILLED_REQUEST,
-      SQ_BP_COST_PER_INVITE,
-      SQ_BP_COST_PER_GB,
-      SQ_ALLOW_REGISTER,
-      SQ_DISABLE_EMAIL,
-    },
-  } = getConfig();
+  const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+const SQ_BP_EARNED_PER_GB = process.env.NEXT_PUBLIC_SQ_BP_EARNED_PER_GB;
+const SQ_BP_EARNED_PER_FILLED_REQUEST = process.env.NEXT_PUBLIC_SQ_BP_EARNED_PER_FILLED_REQUEST;
+const SQ_BP_COST_PER_INVITE = process.env.NEXT_PUBLIC_SQ_BP_COST_PER_INVITE;
+const SQ_BP_COST_PER_GB = process.env.NEXT_PUBLIC_SQ_BP_COST_PER_GB;
+const SQ_ALLOW_REGISTER = process.env.NEXT_PUBLIC_SQ_ALLOW_REGISTER;
+const SQ_DISABLE_EMAIL = process.env.NEXT_PUBLIC_SQ_DISABLE_EMAIL;
 
   const router = useRouter();
 
@@ -732,10 +665,8 @@ export const getServerSideProps = withAuthServerSideProps(
   async ({ token, fetchHeaders }) => {
     if (!token) return { props: {} };
 
-    const {
-      publicRuntimeConfig: { SQ_API_URL },
-      serverRuntimeConfig: { SQ_JWT_SECRET },
-    } = getConfig();
+    const SQ_API_URL = process.env.NEXT_PUBLIC_SQ_API_URL;
+const SQ_JWT_SECRET = process.env.SQ_JWT_SECRET;
 
     const { role, username } = jwt.verify(token, SQ_JWT_SECRET);
 
