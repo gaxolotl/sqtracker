@@ -24,6 +24,8 @@
     "eslint": "^10.7.0",
     "eslint-config-next": "^16.2.10",
     "pretty-bytes": "^7.1.0",
+    "react-dropzone": "^17.0.0",
+    "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   }
 }
