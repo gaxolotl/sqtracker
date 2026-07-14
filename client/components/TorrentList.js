@@ -39,6 +39,10 @@ const TorrentList = ({
     query: { page: pageParam, sort },
   } = router;
 
+  // Guard against torrents being null/undefined (e.g. before data has loaded,
+  // or if an API call returned something other than an array).
+  const safeTorrents = Array.isArray(torrents) ? torrents : [];
+
   const page = pageParam ? parseInt(pageParam) - 1 : 0;
 
   const maxPage = total > pageSize ? Math.floor(total / pageSize) : 0;
@@ -70,7 +74,9 @@ const TorrentList = ({
         );
 
         const results = await searchRes.json();
-        setTorrents(results.torrents);
+        // Ensure we always store an array, even if the API returns
+        // null/undefined (e.g. on error or empty result).
+        setTorrents(Array.isArray(results.torrents) ? results.torrents : []);
       } catch (e) {}
     };
     if (fetchPath && token) fetchTorrents();
@@ -81,7 +87,7 @@ const TorrentList = ({
   return (
     <>
       <List
-        data={torrents.map((torrent) => ({
+        data={safeTorrents.map((torrent) => ({
           ...torrent,
           href: `/torrent/${torrent.infoHash}`,
         }))}

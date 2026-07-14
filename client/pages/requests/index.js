@@ -13,7 +13,7 @@ import Button from "../../components/Button";
 import List from "../../components/List";
 import LocaleContext from "../../utils/LocaleContext";
 
-const Requests = ({ requests }) => {
+const Requests = ({ requests = [] }) => {
   const { getLocaleString } = useContext(LocaleContext);
 
   return (
@@ -79,7 +79,7 @@ const Requests = ({ requests }) => {
 
 export const getServerSideProps = withAuthServerSideProps(
   async ({ token, fetchHeaders }) => {
-    if (!token) return { props: {} };
+    if (!token) return { props: { requests: [] } };
 
     const {
       publicRuntimeConfig: { SQ_API_URL },
@@ -105,7 +105,7 @@ export const getServerSideProps = withAuthServerSideProps(
       };
     } catch (e) {
       if (e === "banned") throw "banned";
-      return { props: {} };
+      return { props: { requests: [] } };
     }
   }
 );

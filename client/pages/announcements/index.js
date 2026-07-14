@@ -11,7 +11,11 @@ import Button from "../../components/Button";
 import List from "../../components/List";
 import LocaleContext from "../../utils/LocaleContext";
 
-const Announcements = ({ announcements, pinnedAnnouncements, userRole }) => {
+const Announcements = ({
+  announcements = [],
+  pinnedAnnouncements = [],
+  userRole,
+}) => {
   const { getLocaleString } = useContext(LocaleContext);
 
   return (
@@ -112,7 +116,7 @@ const Announcements = ({ announcements, pinnedAnnouncements, userRole }) => {
 
 export const getServerSideProps = withAuthServerSideProps(
   async ({ token, fetchHeaders }) => {
-    if (!token) return { props: {} };
+    if (!token) return { props: { announcements: [], pinnedAnnouncements: [] } };
 
     const {
       publicRuntimeConfig: { SQ_API_URL },
@@ -145,11 +149,15 @@ export const getServerSideProps = withAuthServerSideProps(
       const pinnedAnnouncements = await pinnedAnnouncementsRes.json();
 
       return {
-        props: { announcements, pinnedAnnouncements, userRole: role || "user" },
+        props: {
+          announcements,
+          pinnedAnnouncements,
+          userRole: role || "user",
+        },
       };
     } catch (e) {
       if (e === "banned") throw "banned";
-      return { props: {} };
+      return { props: { announcements: [], pinnedAnnouncements: [] } };
     }
   }
 );
