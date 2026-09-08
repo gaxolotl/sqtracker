@@ -238,12 +238,12 @@ export const addComment = async (req, res, next) => {
 export const addCandidate = async (req, res, next) => {
   if (req.body.infoHash) {
     try {
-      if (typeof req.body.infoHash !== "string") {
-        res.status(400).send("Request must include infoHash");
+      const infoHash = req.body.infoHash;
+
+      if (typeof infoHash !== "string" || !/^[a-f0-9]{40}$/i.test(infoHash)) {
+        res.status(400).send("Request must include a valid info hash");
         return;
       }
-
-      const { infoHash } = req.body;
 
       const { requestId } = req.params;
       if (!mongoose.isValidObjectId(requestId)) {
@@ -297,12 +297,12 @@ export const addCandidate = async (req, res, next) => {
 export const acceptCandidate = async (req, res, next) => {
   if (req.body.infoHash) {
     try {
-      if (typeof req.body.infoHash !== "string") {
-        res.status(400).send("Request must include infoHash");
+      const infoHash = req.body.infoHash;
+
+      if (typeof infoHash !== "string" || !/^[a-f0-9]{40}$/i.test(infoHash)) {
+        res.status(400).send("Request must include a valid info hash");
         return;
       }
-
-      const { infoHash } = req.body;
 
       const { requestId } = req.params;
       if (!mongoose.isValidObjectId(requestId)) {
