@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import User from "../schema/user";
+import { envFlag } from "../utils/env";
 import { sendVerificationEmail } from "../controllers/user";
 
 const createAdminUser = async (mail) => {
@@ -18,7 +19,7 @@ const createAdminUser = async (mail) => {
       password: hash,
       created,
       remainingInvites: Number.MAX_SAFE_INTEGER,
-      emailVerified: process.env.SQ_DISABLE_EMAIL,
+      emailVerified: envFlag("SQ_DISABLE_EMAIL"),
     });
     adminUser.uid = crypto
       .createHash("sha256")
@@ -36,7 +37,7 @@ const createAdminUser = async (mail) => {
 
     await adminUser.save();
 
-    if (!process.env.SQ_DISABLE_EMAIL) {
+    if (!envFlag("SQ_DISABLE_EMAIL")) {
       const emailVerificationValidUntil = created + 48 * 60 * 60 * 1000;
       const emailVerificationToken = jwt.sign(
         {

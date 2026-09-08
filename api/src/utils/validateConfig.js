@@ -52,7 +52,7 @@ const configSchema = yup
         SQ_EXTENSION_BLACKLIST: yup.array().of(yup.string()).min(0),
         SQ_SITE_DEFAULT_LOCALE: yup
           .string()
-          .oneOf(["en", "es", "it", "ru", "de", "zh", "eo", "fr"]),
+          .oneOf(["en", "bg", "es", "it", "ru", "de", "zh", "eo", "fr"]),
         SQ_BASE_URL: yup.string().matches(httpRegex).required(),
         SQ_API_URL: yup.string().matches(httpRegex).required(),
         SQ_MONGO_URL: yup.string().matches(mongoRegex).required(),
@@ -111,10 +111,19 @@ const configSchema = yup
 
 const validateConfig = async (config) => {
   try {
+    const serializedConfig = Object.fromEntries(
+      Object.entries({ ...config.envs, ...config.secrets }).map(
+        ([key, value]) => [
+          key,
+          value !== null && typeof value === "object"
+            ? JSON.stringify(value)
+            : String(value),
+        ]
+      )
+    );
     process.env = {
       ...process.env,
-      ...config.envs,
-      ...config.secrets,
+      ...serializedConfig,
     };
     await configSchema.validate(config);
     console.log("[sq] configuration is valid");

@@ -1,5 +1,5 @@
-import Group from "../schema/group";
-import Torrent from "../schema/torrent";
+import Group from "../schema/group.js";
+import Torrent from "../schema/torrent.js";
 
 export const createGroup = async (torrents) => {
   const group = new Group({

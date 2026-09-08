@@ -10,6 +10,7 @@ import { getTorrentsPage } from "./torrent";
 import { getUserRatio } from "../utils/ratio";
 import { getUserHitNRuns } from "../utils/hitnrun";
 import { BYTES_GB } from "../tracker/announce";
+import { envFlag } from "../utils/env";
 
 export const sendVerificationEmail = async (mail, address, token) => {
   await mail.sendMail({
@@ -111,7 +112,7 @@ export const register = (mail) => async (req, res, next) => {
           role,
           invitedBy: invite?.invitingUser,
           remainingInvites: 0,
-          emailVerified: process.env.SQ_DISABLE_EMAIL,
+          emailVerified: envFlag("SQ_DISABLE_EMAIL"),
           bonusPoints: 0,
           totp: {
             enabled: false,
@@ -126,7 +127,7 @@ export const register = (mail) => async (req, res, next) => {
 
         const createdUser = await newUser.save();
 
-        if (!process.env.SQ_DISABLE_EMAIL) {
+        if (!envFlag("SQ_DISABLE_EMAIL")) {
           const emailVerificationValidUntil = created + 48 * 60 * 60 * 1000;
           const emailVerificationToken = jwt.sign(
             {
@@ -304,7 +305,7 @@ export const generateInvite = (mail) => async (req, res) => {
     const createdInvite = await invite.save();
 
     if (createdInvite) {
-      if (!process.env.SQ_DISABLE_EMAIL) {
+      if (!envFlag("SQ_DISABLE_EMAIL")) {
         await mail.sendMail({
           from: `"${process.env.SQ_SITE_NAME}" <${process.env.SQ_MAIL_FROM_ADDRESS}>`,
           to: email,
@@ -356,7 +357,7 @@ export const changePassword = (mail) => async (req, res, next) => {
         { $set: { password: hash } }
       );
 
-      if (!process.env.SQ_DISABLE_EMAIL) {
+      if (!envFlag("SQ_DISABLE_EMAIL")) {
         await mail.sendMail({
           from: `"${process.env.SQ_SITE_NAME}" <${process.env.SQ_MAIL_FROM_ADDRESS}>`,
           to: user.email,
@@ -403,7 +404,7 @@ export const initiatePasswordReset = (mail) => async (req, res, next) => {
         process.env.SQ_JWT_SECRET
       );
 
-      if (!process.env.SQ_DISABLE_EMAIL) {
+      if (!envFlag("SQ_DISABLE_EMAIL")) {
         await mail.sendMail({
           from: `"${process.env.SQ_SITE_NAME}" <${process.env.SQ_MAIL_FROM_ADDRESS}>`,
           to: user.email,

@@ -31,9 +31,17 @@ import {
   finalisePasswordReset,
   verifyUserEmail,
 } from "./controllers/user";
-import { downloadTorrent } from "./controllers/torrent";
+import {
+  downloadTorrent,
+  fetchTorrent,
+  listLatest,
+  listTags,
+  searchTorrents,
+} from "./controllers/torrent";
+import { getWiki } from "./controllers/wiki";
 import { rssFeed } from "./controllers/rss";
 import createAdminUser from "./setup/createAdminUser";
+import { envFlag } from "./utils/env";
 
 validateConfig(config).then(() => {
   if (process.env.SENTRY_DSN) {
@@ -53,11 +61,11 @@ validateConfig(config).then(() => {
 
   let mail;
 
-  if (!process.env.SQ_DISABLE_EMAIL) {
+  if (!envFlag("SQ_DISABLE_EMAIL")) {
     mail = nodemailer.createTransport({
       host: process.env.SQ_SMTP_HOST,
       port: process.env.SQ_SMTP_PORT,
-      secure: process.env.SQ_SMTP_SECURE,
+      secure: envFlag("SQ_SMTP_SECURE"),
       auth: {
         user: process.env.SQ_SMTP_USER,
         pass: process.env.SQ_SMTP_PASS,
@@ -155,6 +163,31 @@ validateConfig(config).then(() => {
     res.send(`■ sqtracker running: ${process.env.SQ_SITE_NAME}`).status(200);
   });
 
+  // Public, read-only configuration used by the Next.js client. Never expose
+  // secrets, SMTP settings, or database credentials here.
+  app.get("/config", (req, res) => {
+    const parseJson = (value, fallback) => {
+      if (!value) return fallback;
+      try {
+        return JSON.parse(value);
+      } catch {
+        return fallback;
+      }
+    };
+
+    res.json({
+      siteName: process.env.SQ_SITE_NAME,
+      siteDescription: process.env.SQ_SITE_DESCRIPTION,
+      allowRegister: process.env.SQ_ALLOW_REGISTER,
+      allowAnonymousUploads: process.env.SQ_ALLOW_ANONYMOUS_UPLOADS === "true",
+      categories: parseJson(process.env.SQ_TORRENT_CATEGORIES, {}),
+      siteWideFreeleech: process.env.SQ_SITE_WIDE_FREELEECH === "true",
+      allowUnregisteredView: process.env.SQ_ALLOW_UNREGISTERED_VIEW === "true",
+      defaultLocale: process.env.SQ_SITE_DEFAULT_LOCALE || "en",
+      customTheme: parseJson(process.env.SQ_CUSTOM_THEME, undefined),
+    });
+  });
+
   // auth routes
   app.post("/register", register(mail));
   app.post("/login", login);
@@ -167,6 +200,15 @@ validateConfig(config).then(() => {
 
   // torrent file download (can download without auth, will not be able to announce)
   app.get("/torrent/download/:infoHash/:userId", downloadTorrent);
+
+  if (envFlag("SQ_ALLOW_UNREGISTERED_VIEW")) {
+    app.get("/torrent/info/:infoHash", fetchTorrent(tracker));
+    app.get("/torrent/latest", listLatest(tracker));
+    app.get("/torrent/search", searchTorrents(tracker));
+    app.get("/torrent/tags", listTags);
+    app.get("/wiki", getWiki);
+    app.get("/wiki/*", getWiki);
+  }
 
   // everything from here on requires user auth
   app.use(auth);

@@ -3,6 +3,7 @@ import bencode from "bencode";
 import User from "../schema/user";
 import Torrent from "../schema/torrent";
 import Progress from "../schema/progress";
+import { envFlag } from "../utils/env";
 import { getUserRatio } from "../utils/ratio";
 import { getUserHitNRuns } from "../utils/hitnrun";
 
@@ -167,11 +168,11 @@ const handleAnnounce = async (req, res) => {
         infoHash,
         downloaded: {
           session:
-            torrent.freeleech || process.env.SQ_SITE_WIDE_FREELEECH === true
+            torrent.freeleech || envFlag("SQ_SITE_WIDE_FREELEECH")
               ? prevProgressRecord?.downloaded?.session ?? 0
               : downloaded,
           total:
-            torrent.freeleech || process.env.SQ_SITE_WIDE_FREELEECH === true
+            torrent.freeleech || envFlag("SQ_SITE_WIDE_FREELEECH")
               ? prevProgressRecord?.downloaded?.total ?? 0
               : (prevProgressRecord?.downloaded?.total ?? 0) +
                 downloadDeltaSession,

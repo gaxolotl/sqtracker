@@ -128,7 +128,8 @@ export const fetchAnnouncement = async (req, res, next) => {
 
 export const getAnnouncements = async (req, res, next) => {
   try {
-    let { page, count } = req.query;
+    let { count } = req.query;
+    let { page } = req.params;
     page = parseInt(page) || 0;
     count = parseInt(count) || 25;
     count = Math.min(count, 100);

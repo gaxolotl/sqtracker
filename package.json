@@ -1,4 +1,7 @@
 {
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "name": "sqtracker",
   "version": "1.5.0",
   "private": true,
@@ -8,9 +11,10 @@
     "client"
   ],
   "scripts": {
-    "api:dev": "yarn workspace @sqtracker/api dev",
-    "client:dev": "yarn workspace @sqtracker/client dev",
+    "api:dev": "pnpm --filter @sqtracker/api dev",
+    "client:dev": "pnpm --filter @sqtracker/client dev",
     "dev": "npm-run-all --parallel api:dev client:dev",
+    "client:build": "pnpm --filter @sqtracker/client build",
     "lint": "prettier --write --ignore-path=.eslintignore \"**/*.{js,json}\""
   },
   "devDependencies": {

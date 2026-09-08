@@ -12,7 +12,7 @@ import {
   disableTotp,
   deleteAccount,
   getUserBookmarks,
-} from "../controllers/user";
+} from "../controllers/user.js";
 
 const router = express.Router();
 

@@ -1,5 +1,6 @@
 import slugify from "slugify";
 import Wiki from "../schema/wiki";
+import { envFlag } from "../utils/env";
 
 const slugRegex = /^\/([a-z0-9-_/])*/i;
 
@@ -102,13 +103,13 @@ export const getWiki = async (req, res, next) => {
       return;
     }
 
-    if (process.env.SQ_ALLOW_UNREGISTERED_VIEW && !req.userId && !page.public) {
+    if (envFlag("SQ_ALLOW_UNREGISTERED_VIEW") && !req.userId && !page.public) {
       page = null;
     }
 
     const query = {};
 
-    if (process.env.SQ_ALLOW_UNREGISTERED_VIEW && !req.userId) {
+    if (envFlag("SQ_ALLOW_UNREGISTERED_VIEW") && !req.userId) {
       query.public = true;
     }
 

@@ -9,6 +9,13 @@ import User from "../schema/user";
 import Comment from "../schema/comment";
 import Group from "../schema/group";
 import { createGroup, addToGroup, removeFromGroup } from "./group";
+import { envFlag } from "../utils/env";
+
+const getTorrentCategories = () =>
+  JSON.parse(process.env.SQ_TORRENT_CATEGORIES || "{}");
+
+const getExtensionBlacklist = () =>
+  JSON.parse(process.env.SQ_EXTENSION_BLACKLIST || "[]");
 
 const urlReservedCharRegex = /[&$+,/:;=?@#<>\[\]{}|\\\^%]/g;
 
@@ -43,19 +50,25 @@ export const uploadTorrent = async (req, res, next) => {
       const torrent = Buffer.from(req.body.torrent, "base64");
       const parsed = bencode.decode(torrent);
 
-      if (process.env.SQ_TORRENT_CATEGORIES.length && !req.body.type) {
+      const categories = getTorrentCategories();
+      if (Object.keys(categories).length && !req.body.type) {
         res.status(400).send("Torrent must have a category");
         return;
       }
 
-      if (process.env.SQ_TORRENT_CATEGORIES.length) {
+      if (Object.keys(categories).length) {
         const sources =
-          process.env.SQ_TORRENT_CATEGORIES[
-            Object.keys(process.env.SQ_TORRENT_CATEGORIES).find(
+          categories[
+            Object.keys(categories).find(
               (cat) => slugify(cat, { lower: true }) === req.body.type
             )
           ];
+        if (!sources) {
+          res.status(400).send("Torrent must have a valid category");
+          return;
+        }
         if (
+          sources.length &&
           !sources
             .map((source) => slugify(source, { lower: true }))
             .includes(req.body.source)
@@ -99,9 +112,7 @@ export const uploadTorrent = async (req, res, next) => {
       }
 
       const hasBlackListedFiles = files.some((file) =>
-        (process.env.SQ_EXTENSION_BLACKLIST ?? []).some((ext) =>
-          file.path.endsWith(`.${ext}`)
-        )
+        getExtensionBlacklist().some((ext) => file.path.endsWith(`.${ext}`))
       );
 
       if (hasBlackListedFiles) {
@@ -140,7 +151,8 @@ export const uploadTorrent = async (req, res, next) => {
         poster: req.body.poster,
         uploadedBy: req.userId,
         downloads: 0,
-        anonymous: false,
+        anonymous:
+          envFlag("SQ_ALLOW_ANONYMOUS_UPLOADS") && !!req.body.anonymous,
         size:
           parsed.info.length ||
           parsed.info.files.reduce((acc, cur) => {
@@ -192,14 +204,20 @@ export const editTorrent = async (req, res, next) => {
         return;
       }
 
-      if (process.env.SQ_TORRENT_CATEGORIES.length) {
+      const categories = getTorrentCategories();
+      if (Object.keys(categories).length) {
         const sources =
-          process.env.SQ_TORRENT_CATEGORIES[
-            Object.keys(process.env.SQ_TORRENT_CATEGORIES).find(
+          categories[
+            Object.keys(categories).find(
               (cat) => slugify(cat, { lower: true }) === req.body.type
             )
           ];
+        if (!sources) {
+          res.status(400).send("Torrent must have a valid category");
+          return;
+        }
         if (
+          sources.length &&
           !sources
             .map((source) => slugify(source, { lower: true }))
             .includes(req.body.source)
@@ -628,7 +646,7 @@ export const getTorrentsPage = async ({
     ...(Array.isArray(ids)
       ? [
           {
-            $match: { expr: { $in: ["$_id", ids] } },
+            $match: { $expr: { $in: ["$_id", ids] } },
           },
         ]
       : []),
@@ -708,7 +726,8 @@ export const searchTorrents = (tracker) => async (req, res, next) => {
   const { query, category, source, tag, page, sort } = req.query;
   try {
     const torrents = await getTorrentsPage({
-      skip: page ? parseInt(page) : 0,
+      skip: page ? parseInt(page) * 25 : 0,
+      limit: 25,
       query: query ? decodeURIComponent(query) : undefined,
       category,
       source,

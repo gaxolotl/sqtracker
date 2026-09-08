@@ -3,7 +3,7 @@ import {
   fetchReport,
   getReports,
   setReportResolved,
-} from "../controllers/moderation";
+} from "../controllers/moderation.js";
 
 const router = express.Router();
 

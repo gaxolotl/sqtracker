@@ -32,7 +32,7 @@ export const createRequest = async (req, res, next) => {
 export const getRequests = async (req, res, next) => {
   const pageSize = 25;
   try {
-    let { page } = req.query;
+    let { page } = req.params;
     page = parseInt(page) || 0;
 
     const requests = await Request.aggregate([

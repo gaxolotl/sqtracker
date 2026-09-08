@@ -17,8 +17,8 @@ export default () => {
   router.post("/new", createAnnouncement);
   router.get("/pinned", getPinnedAnnouncements);
   router.get("/latest", getLatestAnnouncement);
-  router.get("/:slug", fetchAnnouncement);
   router.get("/page/:page", getAnnouncements);
+  router.get("/:slug", fetchAnnouncement);
   router.delete("/:slug", deleteAnnouncement);
   router.post("/pin/:announcementId/:action", pinAnnouncement);
   router.post("/edit/:announcementId", editAnnouncement);

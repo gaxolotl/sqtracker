@@ -71,7 +71,7 @@ export const getReports = async (req, res, next) => {
       return;
     }
 
-    let { page } = req.query;
+    let { page } = req.params;
     page = parseInt(page) || 0;
     const reports = await Report.aggregate([
       {

@@ -7,7 +7,7 @@ import {
   deleteRequest,
   fetchRequest,
   getRequests,
-} from "../controllers/request";
+} from "../controllers/request.js";
 
 const router = express.Router();
 
