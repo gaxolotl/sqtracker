@@ -43,6 +43,8 @@ import { rssFeed } from "./controllers/rss.js";
 import createAdminUser from "./setup/createAdminUser.js";
 import { envFlag } from "./utils/env.js";
 
+mongoose.set("strictQuery", true);
+
 validateConfig(config).then(() => {
   if (process.env.SENTRY_DSN) {
     Sentry.init({
@@ -75,17 +77,10 @@ validateConfig(config).then(() => {
 
   const connectToDb = () => {
     console.log("[sq] initiating db connection...");
-    mongoose
-      .connect(process.env.SQ_MONGO_URL, {
-        useNewUrlParser: true,
-        useFindAndModify: false,
-        useUnifiedTopology: true,
-        useCreateIndex: true,
-      })
-      .catch((e) => {
-        console.error(`[sq] error on initial db connection: ${e.message}`);
-        setTimeout(connectToDb, 5000);
-      });
+    mongoose.connect(process.env.SQ_MONGO_URL).catch((e) => {
+      console.error(`[sq] error on initial db connection: ${e.message}`);
+      setTimeout(connectToDb, 5000);
+    });
   };
   connectToDb();
 
@@ -119,7 +114,7 @@ validateConfig(config).then(() => {
         colorizeStatus(tokens.status(req, res)),
         `(${tokens["response-time"](req, res)} ms)`,
       ].join(" ");
-    })
+    }),
   );
 
   app.use(cors());
@@ -129,9 +124,9 @@ validateConfig(config).then(() => {
   // the origin of the request, as this will be the same for all users. to
   // prevent avoiding a client spoofing this to avoid the limit, we also verify
   // a secret only available to the server
-  const limiter = ratelimit({
-    windowMs: 1000 * 60,
-    max: 120,
+  const rateLimitOptions = (max, windowMs) => ({
+    windowMs,
+    max,
     keyGenerator: (req) => {
       if (
         req.headers["x-forwarded-for"] &&
@@ -144,7 +139,13 @@ validateConfig(config).then(() => {
       return process.env.NODE_ENV !== "production" || req.method === "OPTIONS";
     },
   });
+
+  // coarse global limit shared by every route
+  const limiter = ratelimit(rateLimitOptions(120, 1000 * 60));
   app.use(limiter);
+
+  // stricter limits on endpoints that are attractive to brute force
+  const authLimiter = ratelimit(rateLimitOptions(10, 1000 * 60 * 15));
 
   const tracker = new Tracker.Server({
     http: false,
@@ -153,7 +154,10 @@ validateConfig(config).then(() => {
   });
   const onTrackerRequest = tracker._onRequest.bind(tracker);
   app.get("/announce/:uid", createTrackerRoute("announce", onTrackerRequest));
-  app.get("/announce/:uid/scrape", createTrackerRoute("scrape", onTrackerRequest));
+  app.get(
+    "/announce/:uid/scrape",
+    createTrackerRoute("scrape", onTrackerRequest),
+  );
   // legacy tracker path, kept so already-downloaded torrents keep announcing
   app.get("/sq/*/announce", createTrackerRoute("announce", onTrackerRequest));
   app.get("/sq/*/scrape", createTrackerRoute("scrape", onTrackerRequest));
@@ -192,11 +196,15 @@ validateConfig(config).then(() => {
   });
 
   // auth routes
-  app.post("/register", register(mail));
-  app.post("/login", login);
-  app.post("/reset-password/initiate", initiatePasswordReset(mail));
-  app.post("/reset-password/finalise", finalisePasswordReset);
-  app.post("/verify-email", verifyUserEmail);
+  app.post("/register", authLimiter, register(mail));
+  app.post("/login", authLimiter, login);
+  app.post(
+    "/reset-password/initiate",
+    authLimiter,
+    initiatePasswordReset(mail),
+  );
+  app.post("/reset-password/finalise", authLimiter, finalisePasswordReset);
+  app.post("/verify-email", authLimiter, verifyUserEmail);
 
   // rss feed (auth handled in cookies)
   app.get("/rss", rssFeed(tracker));
@@ -226,9 +234,13 @@ validateConfig(config).then(() => {
   app.use("/group", groupRoutes());
   app.use("/wiki", wikiRoutes());
 
-  app.use((err, req, res) => {
+  app.use((err, req, res, next) => {
+    if (res.headersSent) {
+      next(err);
+      return;
+    }
     console.error(`[sq] error in ${req.url}:`, err);
-    res.status(500).send(`sqtracker API error: ${err}`);
+    res.type("text/plain").status(500).send("sqtracker API error");
   });
 
   const port = process.env.SQ_PORT || 3001;

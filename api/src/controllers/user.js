@@ -40,7 +40,7 @@ export const register = (mail) => async (req, res, next) => {
         res
           .status(403)
           .send(
-            "Registration is currently invite only. Please provide a valid invitation token"
+            "Registration is currently invite only. Please provide a valid invitation token",
           );
         return;
       }
@@ -79,7 +79,8 @@ export const register = (mail) => async (req, res, next) => {
           return;
         }
       } catch (err) {
-        res.status(500).send(`Error verifying invitation: ${err.message}`);
+        console.error("[sq] error verifying invitation:", err.message);
+        res.status(500).send("Error verifying invitation");
         return;
       }
     }
@@ -134,12 +135,12 @@ export const register = (mail) => async (req, res, next) => {
               user: req.body.email,
               validUntil: emailVerificationValidUntil,
             },
-            process.env.SQ_JWT_SECRET
+            process.env.SQ_JWT_SECRET,
           );
           await sendVerificationEmail(
             mail,
             req.body.email,
-            emailVerificationToken
+            emailVerificationToken,
           );
         }
 
@@ -147,16 +148,16 @@ export const register = (mail) => async (req, res, next) => {
           if (req.body.invite) {
             const decoded = jwt.verify(
               req.body.invite,
-              process.env.SQ_JWT_SECRET
+              process.env.SQ_JWT_SECRET,
             );
             const { id } = decoded;
             await Invite.findOneAndUpdate(
               { _id: id },
-              { $set: { claimed: true } }
+              { $set: { claimed: true } },
             );
             await User.findOneAndUpdate(
               { _id: invite.invitingUser },
-              { $inc: { remainingInvites: -1 } }
+              { $inc: { remainingInvites: -1 } },
             );
           }
 
@@ -168,7 +169,7 @@ export const register = (mail) => async (req, res, next) => {
                 created,
                 role,
               },
-              process.env.SQ_JWT_SECRET
+              process.env.SQ_JWT_SECRET,
             ),
             id: createdUser._id,
             uid: createdUser.uid,
@@ -181,7 +182,7 @@ export const register = (mail) => async (req, res, next) => {
         res
           .status(409)
           .send(
-            "An account with that email address or username already exists"
+            "An account with that email address or username already exists",
           );
       }
     } catch (e) {
@@ -195,12 +196,21 @@ export const register = (mail) => async (req, res, next) => {
 export const login = async (req, res, next) => {
   if (req.body.username && req.body.password) {
     try {
+      if (
+        typeof req.body.username !== "string" ||
+        typeof req.body.password !== "string"
+      ) {
+        res.status(400).send("Request must include username and password");
+        return;
+      }
+
+      const requestedUsername = req.body.username;
       // ensure older case sensitive usernames can login still
-      let user = await User.findOne({ username: req.body.username }).lean();
+      let user = await User.findOne({ username: requestedUsername }).lean();
 
       if (!user) {
         user = await User.findOne({
-          username: req.body.username.toLowerCase(),
+          username: requestedUsername.toLowerCase(),
         }).lean();
       }
 
@@ -233,7 +243,7 @@ export const login = async (req, res, next) => {
             } else {
               await User.findOneAndUpdate(
                 { username: user.username },
-                { $pull: { "totp.backup": req.body.totp } }
+                { $pull: { "totp.backup": req.body.totp } },
               );
             }
           }
@@ -248,7 +258,7 @@ export const login = async (req, res, next) => {
                 created: user.created,
                 role: user.role,
               },
-              process.env.SQ_JWT_SECRET
+              process.env.SQ_JWT_SECRET,
             ),
             id: user._id,
             uid: user.uid,
@@ -299,7 +309,7 @@ export const generateInvite = (mail) => async (req, res) => {
 
     invite.token = jwt.sign(
       { id: invite._id, validUntil },
-      process.env.SQ_JWT_SECRET
+      process.env.SQ_JWT_SECRET,
     );
 
     const createdInvite = await invite.save();
@@ -354,7 +364,12 @@ export const changePassword = (mail) => async (req, res, next) => {
 
       await User.findOneAndUpdate(
         { _id: req.userId },
-        { $set: { password: hash } }
+        {
+          $set: {
+            password: hash,
+            pwdVersion: crypto.randomBytes(24).toString("hex"),
+          },
+        },
       );
 
       if (!envFlag("SQ_DISABLE_EMAIL")) {
@@ -384,6 +399,11 @@ ${process.env.SQ_BASE_URL}/reset-password/initiate`,
 export const initiatePasswordReset = (mail) => async (req, res, next) => {
   if (req.body.email) {
     try {
+      if (typeof req.body.email !== "string") {
+        res.status(400).send("Request must include email");
+        return;
+      }
+
       const user = await User.findOne({ email: req.body.email }).lean();
 
       if (!user) {
@@ -395,13 +415,9 @@ export const initiatePasswordReset = (mail) => async (req, res, next) => {
         {
           user: req.body.email,
           validUntil: Date.now() + 24 * 60 * 60 * 1000,
-          key: crypto
-            .createHash("sha256")
-            .update(user.password)
-            .digest("hex")
-            .substr(0, 6),
+          key: user.pwdVersion,
         },
-        process.env.SQ_JWT_SECRET
+        process.env.SQ_JWT_SECRET,
       );
 
       if (!envFlag("SQ_DISABLE_EMAIL")) {
@@ -427,7 +443,20 @@ ${process.env.SQ_BASE_URL}/reset-password/finalise?token=${token}`,
 export const finalisePasswordReset = async (req, res, next) => {
   if (req.body.email && req.body.newPassword && req.body.token) {
     try {
-      const user = await User.findOne({ email: req.body.email }).lean();
+      const { email, newPassword, token } = req.body;
+
+      if (
+        typeof email !== "string" ||
+        typeof newPassword !== "string" ||
+        typeof token !== "string"
+      ) {
+        res
+          .status(400)
+          .send("Request must include email, newPassword and token");
+        return;
+      }
+
+      const user = await User.findOne({ email }).lean();
 
       if (!user) {
         res.status(404).send("User does not exist");
@@ -435,23 +464,17 @@ export const finalisePasswordReset = async (req, res, next) => {
       }
 
       const {
-        user: email,
+        user: tokenEmail,
         validUntil,
         key,
-      } = jwt.verify(req.body.token, process.env.SQ_JWT_SECRET);
+      } = jwt.verify(token, process.env.SQ_JWT_SECRET);
 
-      if (email !== req.body.email) {
+      if (tokenEmail !== email) {
         res.status(403).send("Token is invalid");
         return;
       }
 
-      const calculatedKey = crypto
-        .createHash("sha256")
-        .update(user.password)
-        .digest("hex")
-        .substr(0, 6);
-
-      if (key !== calculatedKey) {
+      if (key !== user.pwdVersion) {
         res.status(403).send("Token has already been used");
         return;
       }
@@ -461,11 +484,16 @@ export const finalisePasswordReset = async (req, res, next) => {
         return;
       }
 
-      const newHash = await bcrypt.hash(req.body.newPassword, 10);
+      const newHash = await bcrypt.hash(newPassword, 10);
 
       await User.findOneAndUpdate(
         { _id: user._id },
-        { $set: { password: newHash } }
+        {
+          $set: {
+            password: newHash,
+            pwdVersion: crypto.randomBytes(24).toString("hex"),
+          },
+        },
       );
 
       res.sendStatus(200);
@@ -759,7 +787,7 @@ export const verifyUserEmail = async (req, res, next) => {
     try {
       const { user: email, validUntil } = jwt.verify(
         req.body.token,
-        process.env.SQ_JWT_SECRET
+        process.env.SQ_JWT_SECRET,
       );
 
       if (validUntil < Date.now()) {
@@ -817,7 +845,7 @@ export const banUser = async (req, res, next) => {
           banned: true,
           banReason: banReason, // Save the reason to the database
         },
-      }
+      },
     );
 
     res.sendStatus(200);
@@ -857,7 +885,7 @@ export const buyItems = async (req, res, next) => {
               remainingInvites: amount,
               bonusPoints: cost * -1,
             },
-          }
+          },
         );
 
         res.status(200).send((user.bonusPoints - cost).toString());
@@ -879,7 +907,7 @@ export const buyItems = async (req, res, next) => {
             $inc: {
               bonusPoints: cost * -1,
             },
-          }
+          },
         );
 
         const progressRecord = new Progress({
@@ -926,7 +954,7 @@ export const unbanUser = async (req, res, next) => {
 
     await User.findOneAndUpdate(
       { username: req.params.username },
-      { $set: { banned: false } }
+      { $set: { banned: false } },
     );
 
     res.sendStatus(200);
@@ -957,7 +985,7 @@ export const generateTotpSecret = async (req, res, next) => {
           "totp.secret": secret.base32,
           "totp.qr": imageDataUrl,
         },
-      }
+      },
     );
 
     res.json({ qr: imageDataUrl, secret: secret.base32 });
@@ -988,7 +1016,7 @@ export const enableTotp = async (req, res, next) => {
       }
 
       const backupCodes = [...Array(10)].map(() =>
-        crypto.randomBytes(32).toString("hex").slice(0, 10)
+        crypto.randomBytes(32).toString("hex").slice(0, 10),
       );
 
       await User.findOneAndUpdate(
@@ -998,7 +1026,7 @@ export const enableTotp = async (req, res, next) => {
             "totp.enabled": true,
             "totp.backup": backupCodes,
           },
-        }
+        },
       );
 
       res.send(backupCodes.join(","));
@@ -1036,7 +1064,7 @@ export const disableTotp = async (req, res, next) => {
             "totp.qr": "",
             "totp.backup": [],
           },
-        }
+        },
       );
 
       res.sendStatus(200);

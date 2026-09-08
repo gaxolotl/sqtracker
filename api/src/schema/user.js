@@ -1,9 +1,14 @@
+import crypto from "crypto";
 import mongoose from "mongoose";
 
 const User = new mongoose.Schema({
   username: String,
   email: String,
   password: String,
+  pwdVersion: {
+    type: String,
+    default: () => crypto.randomBytes(24).toString("hex"),
+  },
   uid: String,
   torrents: Object,
   created: Number,
