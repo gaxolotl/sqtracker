@@ -24,7 +24,7 @@ export type Torrent = {
   uploadedBy?: UserRef;
   anonymous?: boolean;
   size?: number;
-  files?: Array<{ name?: string; path?: string; length?: number; size?: number }>;
+  files?: Array<{ name?: string | number[] | { type?: string; data?: number[] }; path?: string | number[] | { type?: string; data?: number[] }; length?: number; size?: number }>;
   created: number;
   downloads?: number;
   complete?: number;

@@ -32,6 +32,38 @@ function countVotes(votes: Torrent["upvotes"]) {
   return Array.isArray(votes) ? votes.length : (votes ?? 0);
 }
 
+type FileRecord = NonNullable<Torrent["files"]>[number];
+
+function charsToString(values: number[]) {
+  try {
+    const decoded = new TextDecoder().decode(Uint8Array.from(values));
+    if (!decoded.includes("\uFFFD")) return decoded;
+  } catch {
+    // fall through to the code-unit interpretation
+  }
+  return String.fromCharCode(...values);
+}
+
+function decodePath(value: FileRecord["path"] | FileRecord["name"]) {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    if (value.length > 0 && value.every((part) => typeof part === "number")) {
+      return charsToString(value as number[]);
+    }
+    return value
+      .map((part) => (typeof part === "string" ? part : JSON.stringify(part)))
+      .join("/");
+  }
+  if (value && typeof value === "object" && Array.isArray(value.data)) {
+    return charsToString(value.data);
+  }
+  return "";
+}
+
+function fileLabel(file: FileRecord) {
+  return decodePath(file.path ?? file.name) || "File";
+}
+
 export function TorrentDetail({ infoHash }: { infoHash: string }) {
   const { session } = useAuth();
   const router = useRouter();
@@ -161,13 +193,16 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
             {data.files?.length ? (
               <section className="detail-card files-card">
                 <h2>Files</h2>
-                {data.files.map((file, index) => (
-                  <div className="file-row" key={`${file.path ?? file.name}-${index}`}>
-                    <FileText aria-hidden="true" />
-                    <span>{file.path ?? file.name ?? "File"}</span>
-                    <small>{formatBytes(file.size ?? file.length)}</small>
-                  </div>
-                ))}
+                {data.files.map((file, index) => {
+                  const label = fileLabel(file);
+                  return (
+                    <div className="file-row" key={`${label}-${index}`}>
+                      <FileText aria-hidden="true" />
+                      <span>{label}</span>
+                      <small>{formatBytes(file.size ?? file.length)}</small>
+                    </div>
+                  );
+                })}
               </section>
             ) : null}
 
