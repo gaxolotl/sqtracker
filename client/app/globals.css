@@ -1072,6 +1072,32 @@ h1 {
   color: var(--accent);
 }
 
+.announce-hint .tooltip-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  cursor: copy;
+}
+
+.announce-hint .tooltip-copy:hover {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.announce-hint .tooltip-copy svg {
+  width: 14px;
+  height: 14px;
+  color: inherit;
+}
+
 .drop-zone {
   position: relative;
   display: grid;

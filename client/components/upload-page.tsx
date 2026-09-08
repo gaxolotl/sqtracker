@@ -1,11 +1,11 @@
 "use client";
 
-import { FileUp, Link2 } from "lucide-react";
+import { Check, Copy, FileUp, Info, Link2 } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-context";
 import { ActionMessage, Field, PageHeader, SignInRequired } from "@/components/ui";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiOrigin } from "@/lib/api";
 import { configCategoryOptions, type CategoryOption } from "@/lib/categories";
 import { useTrackerConfig } from "@/hooks/use-tracker-config";
 
@@ -25,6 +25,7 @@ export function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [category, setCategory] = useState("");
   const categoryOptions = configCategoryOptions(config.categories, fallbackCategories);
   const selectedCategory = categoryOptions.find((option) => option.slug === category);
@@ -62,10 +63,28 @@ export function UploadPage() {
   }
 
   if (!session) return <main className="page"><SignInRequired /></main>;
+  const announceUrl = `${apiOrigin()}/sq/${session.uid}/announce`;
+
+  async function copyAnnounceUrl() {
+    try {
+      await navigator.clipboard.writeText(announceUrl);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = announceUrl;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
   return (
     <main className="page form-page">
       <PageHeader title="Upload" />
-      <p className="announce-hint"><Link2 aria-hidden="true" /> Announce URL must point to this tracker before the upload can be accepted.</p>
+            <p className="announce-hint"><Link2 aria-hidden="true" /><span>Announce URL must point to this tracker before the upload can be accepted.</span><span className="info-tooltip" tabIndex={0} aria-label={announceUrl}><Info aria-hidden="true" /><span role="tooltip">The announce URL is the tracker address inside a .torrent that your client reports to. Torrents you upload must point to it so your upload and download stats are counted.<button type="button" className="tooltip-copy" onClick={copyAnnounceUrl}>{copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}{copied ? "Copied to clipboard" : announceUrl}</button></span></span></p>
       <form className="stack-form wide-form" onSubmit={submit}>
         <Field label="Torrent file">
           <label className="drop-zone"><FileUp aria-hidden="true" /><strong>{file?.name ?? "Drag a .torrent file here, or click to select"}</strong><input type="file" accept=".torrent,application/x-bittorrent" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /></label>
