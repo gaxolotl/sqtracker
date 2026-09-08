@@ -13,7 +13,7 @@ export const binaryToHex = (b) => Buffer.from(b, "binary").toString("hex");
 export const hexToBinary = (h) => Buffer.from(h, "hex").toString("binary");
 
 const handleAnnounce = async (req, res) => {
-  const userId = req.originalUrl.split("/")[2];
+  const userId = req.originalUrl.split("?")[0].split("/")[2];
   req.userId = userId;
 
   console.log(`[DEBUG] userId: ${userId}`);

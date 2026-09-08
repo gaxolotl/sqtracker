@@ -113,9 +113,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Icon aria-hidden="true" />
             </Link>
           ))}
-          {accountItems.map(({ label, href, icon: Icon }, index) => (
+          {accountItems.map(({ label, href, icon: Icon }) => (
             <Link
-              className={`nav-link ${isActive(href) ? "active" : ""} ${index === 0 ? "nav-separator" : ""}`}
+              className={`nav-link ${isActive(href) ? "active" : ""}`}
               href={href}
               key={label}
               onClick={() => setMenuOpen(false)}

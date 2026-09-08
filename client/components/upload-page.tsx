@@ -63,7 +63,7 @@ export function UploadPage() {
   }
 
   if (!session) return <main className="page"><SignInRequired /></main>;
-  const announceUrl = `${apiOrigin()}/sq/${session.uid}/announce`;
+  const announceUrl = `${apiOrigin()}/announce/${session.uid}`;
 
   async function copyAnnounceUrl() {
     try {

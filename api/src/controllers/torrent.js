@@ -12,6 +12,7 @@ import Comment from "../schema/comment.js";
 import Group from "../schema/group.js";
 import { createGroup, addToGroup, removeFromGroup } from "./group.js";
 import { envFlag } from "../utils/env.js";
+import { countSwarmPeers } from "../tracker/swarm-stats.js";
 
 const getTorrentCategories = () =>
   JSON.parse(process.env.SQ_TORRENT_CATEGORIES || "{}");
@@ -43,10 +44,11 @@ export const embellishTorrentsWithTrackerScrape = async (tracker, torrents) => {
   try {
     return torrents.map((torrent) => {
       const torrentFromTracker = tracker.torrents[torrent.infoHash];
+      const { seeders, leechers } = countSwarmPeers(torrentFromTracker);
       return {
         ...torrent,
-        seeders: torrentFromTracker?.complete || 0,
-        leechers: torrentFromTracker?.incomplete || 0,
+        seeders,
+        leechers,
       };
     });
   } catch (e) {
@@ -92,7 +94,7 @@ export const uploadTorrent = async (req, res, next) => {
       const user = await User.findOne({ _id: req.userId }).lean();
 
       parsed.info.private = 1;
-      parsed.announce = `${process.env.SQ_BASE_URL}/sq/${user.uid}/announce`;
+      parsed.announce = `${process.env.SQ_ANNOUNCE_URL || process.env.SQ_BASE_URL}/announce/${user.uid}`;
       delete parsed["announce-list"];
 
       const infoHash = crypto
@@ -280,7 +282,7 @@ export const downloadTorrent = async (req, res, next) => {
     const { binary } = torrent;
     const parsed = bencode.decode(Buffer.from(binary, "base64"));
 
-    parsed.announce = `${process.env.SQ_BASE_URL}/sq/${user.uid}/announce`;
+    parsed.announce = `${process.env.SQ_ANNOUNCE_URL || process.env.SQ_BASE_URL}/announce/${user.uid}`;
     delete parsed["announce-list"];
     parsed.info.private = 1;
 

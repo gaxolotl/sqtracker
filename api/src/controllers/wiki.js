@@ -98,29 +98,31 @@ export const getWiki = async (req, res, next) => {
       },
     ]);
 
-    if (!page) {
-      res.status(404).send("Wiki page does not exist");
-      return;
-    }
+    const anonymous = envFlag("SQ_ALLOW_UNREGISTERED_VIEW") && !req.userId;
 
-    if (envFlag("SQ_ALLOW_UNREGISTERED_VIEW") && !req.userId && !page.public) {
+    if (page && anonymous && !page.public) {
       page = null;
     }
 
-    const query = {};
-
-    if (envFlag("SQ_ALLOW_UNREGISTERED_VIEW") && !req.userId) {
-      query.public = true;
-    }
-
+    const query = anonymous ? { public: true } : {};
     const allPages = await Wiki.find(query, { slug: 1, title: 1 }).lean();
+
+    if (!page) {
+      // The main page does not have to exist yet - the client offers an
+      // editor to create it. Any other missing page is a plain 404.
+      if (slug === "/") {
+        res.json({ page: null, allPages });
+        return;
+      }
+      res.status(404).send("Wiki page does not exist");
+      return;
+    }
 
     res.json({ page, allPages });
   } catch (e) {
     next(e);
   }
 };
-
 export const deleteWiki = async (req, res, next) => {
   try {
     if (req.userRole !== "admin") {

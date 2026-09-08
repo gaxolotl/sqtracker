@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-context";
 import { ApiState, PageHeader, SignInRequired } from "@/components/ui";
 import { useApiData } from "@/hooks/use-api-data";
@@ -17,7 +17,32 @@ export function WikiPage({ slug = "/" }: { slug?: string }) {
   const [actionError, setActionError] = useState("");
   const { data, error, loading } = useApiData<WikiResponse>(session ? `/wiki${slug}` : null);
 
+  useEffect(() => {
+    if (
+      slug === "/" &&
+      session?.role === "admin" &&
+      !loading &&
+      !error &&
+      data &&
+      !data.page
+    ) {
+      router.replace("/wiki/new?main=1");
+    }
+  }, [slug, session?.role, loading, error, data, router]);
+
   if (!session) return <main className="page"><SignInRequired /></main>;
+
+  if (data && !data.page) {
+    return (
+      <main className="page wiki-page">
+        <div className="state-panel">
+          {session.role === "admin"
+            ? "The wiki main page does not exist yet. Taking you to the editor…"
+            : "The wiki main page has not been created yet."}
+        </div>
+      </main>
+    );
+  }
 
   async function removePage() {
     if (!data?.page || !window.confirm("Delete this wiki page permanently?")) return;

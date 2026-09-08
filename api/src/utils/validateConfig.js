@@ -55,6 +55,7 @@ const configSchema = yup
           .oneOf(["en", "bg", "es", "it", "ru", "de", "zh", "eo", "fr"]),
         SQ_BASE_URL: yup.string().matches(httpRegex).required(),
         SQ_API_URL: yup.string().matches(httpRegex).required(),
+        SQ_ANNOUNCE_URL: yup.string().matches(httpRegex),
         SQ_MONGO_URL: yup.string().matches(mongoRegex).required(),
         SQ_DISABLE_EMAIL: yup.boolean(),
         SQ_MAIL_FROM_ADDRESS: yup

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { AlertCircle, CircleHelp, LoaderCircle, LogIn } from "lucide-react";
+import { useEffect } from "react";
+import { useToast } from "@/components/toast-context";
 import { useI18n } from "@/components/i18n-context";
 
 export function PageHeader({ title, info, actions }: { title: string; info?: string; actions?: React.ReactNode }) {
@@ -39,7 +41,18 @@ export function Field({ label, children, hint }: { label: string; children: Reac
   return <label className="field"><span>{label}</span>{children}{hint ? <small>{hint}</small> : null}</label>;
 }
 
+function SuccessToast({ text }: { text: string }) {
+  const { notify } = useToast();
+  useEffect(() => { notify(text); }, [text, notify]);
+  return null;
+}
+
 export function ActionMessage({ message, error }: { message?: string; error?: string }) {
-  if (!message && !error) return null;
-  return <div className={`action-message ${error ? "action-error" : "action-success"}`} role="status">{error || message}</div>;
+  if (error) {
+    return (
+      <div className="action-message action-error" role="alert">{error}</div>
+    );
+  }
+  if (!message) return null;
+  return <SuccessToast text={message} />;
 }

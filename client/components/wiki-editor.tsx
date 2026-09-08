@@ -14,7 +14,13 @@ import { useApiData } from "@/hooks/use-api-data";
 import { apiFetch } from "@/lib/api";
 import type { WikiResponse } from "@/lib/types";
 
-export function WikiEditor({ slug }: { slug?: string | null }) {
+export function WikiEditor({
+  slug,
+  defaultSlug,
+}: {
+  slug?: string | null;
+  defaultSlug?: string;
+}) {
   const { session } = useAuth();
   const router = useRouter();
   const requestSlug = slug ? (slug === "/" ? "/wiki" : `/wiki${slug}`) : null;
@@ -74,10 +80,28 @@ export function WikiEditor({ slug }: { slug?: string | null }) {
     }
   }
 
+  const creatingRoot = !slug && defaultSlug === "/";
+
   const form = (
     <form className="stack-form wide-form" key={data?.page?._id ?? "new"} onSubmit={submit}>
-      <Field label="Path">
-        {slug === "/" ? <input name="slug" value="/" readOnly /> : <input name="slug" required defaultValue={slug ? data?.page?.slug.replace(/^\/+/, "") : ""} placeholder="rules or faq/uploading" />}
+      <Field
+        label="Path"
+        hint={
+          creatingRoot
+            ? "/ is the wiki's main page, shown at /wiki."
+            : undefined
+        }
+      >
+        {slug === "/" || creatingRoot ? (
+          <input name="slug" value="/" readOnly />
+        ) : (
+          <input
+            name="slug"
+            required
+            defaultValue={slug ? data?.page?.slug.replace(/^\/+/, "") : ""}
+            placeholder="rules or faq/uploading"
+          />
+        )}
       </Field>
       <Field label="Title"><input name="title" required defaultValue={data?.page?.title} /></Field>
       <Field label="Body"><textarea name="body" rows={12} required placeholder="Markdown supported" defaultValue={data?.page?.body} /></Field>

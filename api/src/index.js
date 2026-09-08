@@ -152,6 +152,9 @@ validateConfig(config).then(() => {
     ws: false,
   });
   const onTrackerRequest = tracker._onRequest.bind(tracker);
+  app.get("/announce/:uid", createTrackerRoute("announce", onTrackerRequest));
+  app.get("/announce/:uid/scrape", createTrackerRoute("scrape", onTrackerRequest));
+  // legacy tracker path, kept so already-downloaded torrents keep announcing
   app.get("/sq/*/announce", createTrackerRoute("announce", onTrackerRequest));
   app.get("/sq/*/scrape", createTrackerRoute("scrape", onTrackerRequest));
 

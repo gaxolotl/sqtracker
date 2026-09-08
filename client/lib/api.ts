@@ -42,6 +42,9 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
 
   const response = await fetch(`${apiOrigin()}${path}`, {
     ...requestOptions,
+    // The API tags JSON with ETags, and a cached 304 comes back with no body,
+    // which this helper can't use. Always ask for a full response.
+    cache: "no-store",
     headers: requestHeaders,
   });
 

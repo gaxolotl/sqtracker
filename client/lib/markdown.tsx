@@ -20,7 +20,11 @@ function renderInline(value: string, depth = 0): ReactNode[] {
   let match: RegExpExecArray | null;
   let index = 0;
 
-  while ((match = inlinePattern.exec(source)) !== null) {
+  // Use a fresh regex per invocation: renderInline recurses, and sharing one
+  // global /g regex would let an inner call reset lastIndex and loop forever.
+  const pattern = new RegExp(inlinePattern.source, inlinePattern.flags);
+
+  while ((match = pattern.exec(source)) !== null) {
     if (match.index > cursor) nodes.push(source.slice(cursor, match.index));
     if (match[1]) {
       nodes.push(<code key={index}>{match[1].slice(1, -1)}</code>);
@@ -41,7 +45,7 @@ function renderInline(value: string, depth = 0): ReactNode[] {
         nodes.push(label);
       }
     }
-    cursor = inlinePattern.lastIndex;
+    cursor = pattern.lastIndex;
     index += 1;
   }
   if (cursor < source.length) nodes.push(source.slice(cursor));

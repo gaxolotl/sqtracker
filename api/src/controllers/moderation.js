@@ -5,6 +5,7 @@ import Progress from "../schema/progress.js";
 import Invite from "../schema/invite.js";
 import Request from "../schema/request.js";
 import Comment from "../schema/comment.js";
+import { countSwarmPeers } from "../tracker/swarm-stats.js";
 
 export const createReport = async (req, res, next) => {
   if (req.body.reason) {
@@ -157,13 +158,7 @@ export const setReportResolved = async (req, res, next) => {
   }
 };
 
-export const getStats = (tracker) => async (req, res, next) => {
-  try {
-    if (req.userRole !== "admin") {
-      res.status(401).send("You do not have permission to view tracker stats");
-      return;
-    }
-
+const computeTrackerStats = async (tracker) => {
     const registeredUsers = await User.countDocuments();
     const bannedUsers = await User.countDocuments({ banned: true });
     const uploadedTorrents = await Torrent.countDocuments();
@@ -176,37 +171,20 @@ export const getStats = (tracker) => async (req, res, next) => {
     });
     const totalComments = await Comment.countDocuments();
 
-    const allPeers = {};
     let activeTorrents = 0;
+    let peers = 0;
+    let seeders = 0;
+    let leechers = 0;
 
     Object.keys(tracker.torrents).forEach((infoHash) => {
-      const { peers } = tracker.torrents[infoHash];
-      const keys = peers.keys;
-      if (keys.length > 0) activeTorrents++;
-
-      keys.forEach((peerId) => {
-        // Don't mark the peer as most recently used for stats
-        const peer = peers.peek(peerId);
-        if (peer == null) return; // peers.peek() can evict the peer
-
-        if (!allPeers[peerId]) {
-          allPeers[peerId] = {
-            seeder: false,
-            leecher: false,
-          };
-        }
-
-        if (peer.complete) {
-          allPeers[peerId].seeder = true;
-        } else {
-          allPeers[peerId].leecher = true;
-        }
-
-        allPeers[peerId].peerId = peer.peerId;
-      });
+      const counts = countSwarmPeers(tracker.torrents[infoHash]);
+      if (counts.peers > 0) activeTorrents++;
+      peers += counts.peers;
+      seeders += counts.seeders;
+      leechers += counts.leechers;
     });
 
-    res.json({
+    return {
       registeredUsers,
       bannedUsers,
       uploadedTorrents,
@@ -217,16 +195,146 @@ export const getStats = (tracker) => async (req, res, next) => {
       filledRequests,
       totalComments,
       activeTorrents,
-      peers: Object.keys(allPeers).length,
-      seeders: Object.values(allPeers).filter(
-        (peer) => peer.seeder && !peer.leecher
-      ).length,
-      leechers: Object.values(allPeers).filter(
-        (peer) => peer.leecher && !peer.seeder
-      ).length,
-    });
+      peers,
+      seeders,
+      leechers,
+    };
+};
+
+export const getStats = (tracker) => async (req, res, next) => {
+  try {
+    if (req.userRole !== "admin") {
+      res.status(401).send("You do not have permission to view tracker stats");
+      return;
+    }
+
+    res.json(await computeTrackerStats(tracker));
   } catch (e) {
     console.error(e);
+    next(e);
+  }
+};
+
+export const refreshStats = (tracker) => async (req, res, next) => {
+  try {
+    if (req.userRole !== "admin") {
+      res
+        .status(401)
+        .send("You do not have permission to refresh tracker stats");
+      return;
+    }
+
+    // Refresh each swarm's cached complete/incomplete counters from the peers
+    // currently connected, then rebuild the whole snapshot.
+    Object.keys(tracker.torrents).forEach((infoHash) => {
+      const swarm = tracker.torrents[infoHash];
+      const { seeders, leechers } = countSwarmPeers(swarm);
+      swarm.complete = seeders;
+      swarm.incomplete = leechers;
+    });
+
+    res.json(await computeTrackerStats(tracker));
+  } catch (e) {
+    console.error(e);
+    next(e);
+  }
+};
+
+
+export const listTorrentPeers = (tracker) => async (req, res, next) => {
+  try {
+    if (req.userRole !== "admin") {
+      res.status(401).send("You do not have permission to view peers");
+      return;
+    }
+
+    const { infoHash } = req.params;
+    const swarm = tracker.torrents[infoHash];
+    const byPeerId = new Map();
+
+    // Swarm entries are keyed by ip:port, so collapse the same client
+    // announcing from multiple addresses into one peer.
+    swarm?.peers?.keys?.forEach?.((key) => {
+      const peer = swarm.peers.peek(key);
+      if (!peer) return;
+      const address = `${peer.ip}:${peer.port}`;
+      const current = byPeerId.get(peer.peerId);
+      if (current) {
+        if (!current.addresses.includes(address)) current.addresses.push(address);
+        if (peer.complete) current.seeder = true;
+      } else {
+        byPeerId.set(peer.peerId, {
+          peerId: peer.peerId,
+          addresses: [address],
+          seeder: peer.complete === true,
+        });
+      }
+    });
+
+    const peers = [...byPeerId.values()];
+    peers.sort(
+      (a, b) =>
+        (a.seeder === b.seeder ? 0 : a.seeder ? -1 : 1) ||
+        a.addresses[0].localeCompare(b.addresses[0])
+    );
+
+    // Resolve the registered user behind each announce (swarm stores the
+    // peer id as hex, the announce records keep it as raw bytes).
+    const usernameByPeerId = new Map();
+    if (peers.length) {
+      const rawPeerIds = peers.map((peer) =>
+        Buffer.from(peer.peerId, "hex").toString("binary")
+      );
+      const progress = await Progress.find({
+        infoHash,
+        peerId: { $in: rawPeerIds },
+      })
+        .select("userId peerId")
+        .lean();
+
+      const userIds = [
+        ...new Set(
+          progress
+            .map((record) => record.userId && String(record.userId))
+            .filter(Boolean)
+        ),
+      ];
+      const usernames = new Map();
+      if (userIds.length) {
+        const users = await User.find({ _id: { $in: userIds } })
+          .select("username")
+          .lean();
+        users.forEach((user) => usernames.set(String(user._id), user.username));
+      }
+
+      progress.forEach((record) => {
+        if (!record.peerId || !record.userId) return;
+        const hex = Buffer.from(record.peerId, "binary").toString("hex");
+        usernameByPeerId.set(hex, usernames.get(String(record.userId)) ?? null);
+      });
+    }
+
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const perPage = Math.min(
+      Math.max(parseInt(req.query.perPage, 10) || 10, 1),
+      100
+    );
+    const start = (page - 1) * perPage;
+
+    res.json({
+      infoHash,
+      total: peers.length,
+      page,
+      perPage,
+      peers: peers.slice(start, start + perPage).map((peer) => ({
+        peerId: peer.peerId,
+        ip: peer.addresses[0],
+        addresses: peer.addresses,
+        seeder: peer.seeder,
+        username: usernameByPeerId.get(peer.peerId) ?? null,
+      })),
+    });
+  } catch (e) {
     next(e);
   }
 };

@@ -24,6 +24,7 @@ import {
   SignInRequired,
 } from "@/components/ui";
 import { useApiData } from "@/hooks/use-api-data";
+import { TorrentPeers } from "@/components/torrent-peers";
 import { apiFetch, apiOrigin } from "@/lib/api";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import type { Torrent } from "@/lib/types";
@@ -197,6 +198,7 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
                 <div><dt>Leechers</dt><dd>{data.leechers ?? data.incomplete ?? "?"}</dd></div>
                 <div><dt>Freeleech</dt><dd>{data.freeleech ? "Yes" : "No"}</dd></div>
               </dl>
+              {session.role === "admin" ? <TorrentPeers infoHash={data.infoHash} /> : null}
             </section>
 
             <section className="copy-section">

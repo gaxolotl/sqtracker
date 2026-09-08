@@ -16,7 +16,7 @@ const getTorrentXml = (torrent, userId) => {
         <trackers>
           <group order="ordered">
             <tracker seeds="${torrent.seeders}" peers="${torrent.seeders + torrent.leechers}">
-              ${process.env.SQ_BASE_URL}/sq/${userId}/announce
+              ${process.env.SQ_ANNOUNCE_URL || process.env.SQ_BASE_URL}/announce/${userId}
             </tracker>
           </group>
         </trackers>
