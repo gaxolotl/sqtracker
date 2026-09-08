@@ -237,15 +237,21 @@ export const addComment = async (req, res, next) => {
 export const addCandidate = async (req, res, next) => {
   if (req.body.infoHash) {
     try {
+      if (typeof req.body.infoHash !== "string") {
+        res.status(400).send("Request must include infoHash");
+        return;
+      }
+
+      const { infoHash } = req.body;
       const request = await Request.findOne({
         _id: req.params.requestId,
       }).lean();
 
       const torrent = await Torrent.findOne(
         {
-          infoHash: req.body.infoHash,
+          infoHash,
         },
-        { infoHash: 1, name: 1, type: 1, created: 1 }
+        { infoHash: 1, name: 1, type: 1, created: 1 },
       ).lean();
 
       if (!torrent) {
@@ -268,7 +274,7 @@ export const addCandidate = async (req, res, next) => {
           $addToSet: {
             candidates: { torrent: torrent._id, suggestedBy: req.userId },
           },
-        }
+        },
       );
 
       res.status(200).send({ torrent });
@@ -283,6 +289,12 @@ export const addCandidate = async (req, res, next) => {
 export const acceptCandidate = async (req, res, next) => {
   if (req.body.infoHash) {
     try {
+      if (typeof req.body.infoHash !== "string") {
+        res.status(400).send("Request must include infoHash");
+        return;
+      }
+
+      const { infoHash } = req.body;
       const request = await Request.findOne({
         _id: req.params.requestId,
       }).lean();
@@ -295,11 +307,11 @@ export const acceptCandidate = async (req, res, next) => {
       }
 
       const torrent = await Torrent.findOne({
-        infoHash: req.body.infoHash,
+        infoHash,
       }).lean();
 
       const candidate = request.candidates.find(
-        (c) => c.torrent?.toString() === torrent._id.toString()
+        (c) => c.torrent?.toString() === torrent._id.toString(),
       );
 
       if (!candidate) {
@@ -311,7 +323,7 @@ export const acceptCandidate = async (req, res, next) => {
 
       await Request.findOneAndUpdate(
         { _id: req.params.requestId },
-        { $set: { fulfilledBy: torrent._id } }
+        { $set: { fulfilledBy: torrent._id } },
       );
 
       await User.findOneAndUpdate(
@@ -325,7 +337,7 @@ export const acceptCandidate = async (req, res, next) => {
                 ? 2
                 : 1),
           },
-        }
+        },
       );
 
       res.status(200).send({ torrent: torrent._id });

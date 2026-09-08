@@ -2,6 +2,14 @@ packages:
   - api
   - client
 
+overrides:
+  qs: ^6.16.0
+  ip: file:vendor/ip
+
+peerDependencyRules:
+  allowedVersions:
+    mongoose: '>=6'
+
 allowBuilds:
   bcrypt: true
   bufferutil: true

@@ -1,0 +1,7 @@
+{
+  "name": "ip",
+  "version": "3.0.0",
+  "description": "Drop-in replacement for the abandoned `ip` package with corrected public/reserved address classification (GHSA-2p57-rm9w-gvfp)",
+  "license": "MIT",
+  "main": "index.js"
+}

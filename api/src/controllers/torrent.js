@@ -38,6 +38,9 @@ const formatTag = (tag) =>
     .replaceAll(urlReservedCharRegex, "")
     .replaceAll(" ", "-");
 
+const isValidInfoHash = (value) =>
+  typeof value === "string" && /^[a-f0-9]{40}$/i.test(value);
+
 export const embellishTorrentsWithTrackerScrape = async (tracker, torrents) => {
   if (!torrents.length) return [];
 
@@ -73,7 +76,7 @@ export const uploadTorrent = async (req, res, next) => {
         const sources =
           categories[
             Object.keys(categories).find(
-              (cat) => slugify(cat, { lower: true }) === req.body.type
+              (cat) => slugify(cat, { lower: true }) === req.body.type,
             )
           ];
         if (!sources) {
@@ -125,7 +128,7 @@ export const uploadTorrent = async (req, res, next) => {
       }
 
       const hasBlackListedFiles = files.some((file) =>
-        getExtensionBlacklist().some((ext) => file.path.endsWith(`.${ext}`))
+        getExtensionBlacklist().some((ext) => file.path.endsWith(`.${ext}`)),
       );
 
       if (hasBlackListedFiles) {
@@ -138,8 +141,15 @@ export const uploadTorrent = async (req, res, next) => {
       let groupId;
 
       if (req.body.groupWith) {
+        const groupWith = req.body.groupWith;
+
+        if (!isValidInfoHash(groupWith)) {
+          res.status(400).send("Cannot group with an invalid torrent");
+          return;
+        }
+
         const groupWithTorrent = await Torrent.findOne({
-          infoHash: req.body.groupWith,
+          infoHash: groupWith,
         }).lean();
 
         if (!groupWithTorrent) {
@@ -176,7 +186,10 @@ export const uploadTorrent = async (req, res, next) => {
         upvotes: [],
         downvotes: [],
         freeleech: false,
-        tags: (req.body.tags ?? "").split(",").map((t) => formatTag(t)).filter(Boolean),
+        tags: (req.body.tags ?? "")
+          .split(",")
+          .map((t) => formatTag(t))
+          .filter(Boolean),
         group: groupId,
         mediaInfo: req.body.mediaInfo,
       });
@@ -198,14 +211,17 @@ export const editTorrent = async (req, res, next) => {
     try {
       const { infoHash } = req.params;
 
+      if (!isValidInfoHash(infoHash)) {
+        res.status(404).send("Torrent does not exist");
+        return;
+      }
+
       const torrent = await Torrent.findOne({
         infoHash,
       }).lean();
 
       if (!torrent) {
-        res
-          .status(404)
-          .send(`Torrent with info hash ${infoHash} does not exist`);
+        res.status(404).send("Torrent does not exist");
         return;
       }
 
@@ -222,7 +238,7 @@ export const editTorrent = async (req, res, next) => {
         const sources =
           categories[
             Object.keys(categories).find(
-              (cat) => slugify(cat, { lower: true }) === req.body.type
+              (cat) => slugify(cat, { lower: true }) === req.body.type,
             )
           ];
         if (!sources) {
@@ -240,22 +256,31 @@ export const editTorrent = async (req, res, next) => {
         }
       }
 
-      const clone = { ...torrent, name: req.body.name };
+      const name = String(req.body.name);
+      const type = String(req.body.type);
+      const source = typeof req.body.source === "string" ? req.body.source : "";
+      const description = String(req.body.description);
+      const tags = String(req.body.tags ?? "")
+        .split(",")
+        .map((t) => formatTag(t))
+        .filter(Boolean);
+
+      const clone = { ...torrent, name };
       createNGrams(clone, ["name"]);
 
       await Torrent.findOneAndUpdate(
         { infoHash },
         {
           $set: {
-            name: req.body.name,
+            name,
             name_fuzzy: clone.name_fuzzy,
-            type: req.body.type,
-            source: req.body.source,
-            description: req.body.description,
-            tags: (req.body.tags ?? "").split(",").map((t) => formatTag(t)).filter(Boolean),
+            type,
+            source,
+            description,
+            tags,
           },
           mediaInfo: req.body.mediaInfo,
-        }
+        },
       );
 
       res.sendStatus(200);
@@ -302,6 +327,11 @@ export const downloadTorrent = async (req, res, next) => {
 
 export const fetchTorrent = (tracker) => async (req, res, next) => {
   const { infoHash } = req.params;
+
+  if (!isValidInfoHash(infoHash)) {
+    res.status(404).send("Torrent does not exist");
+    return;
+  }
 
   try {
     const [torrent] = await Torrent.aggregate([
@@ -419,7 +449,7 @@ export const fetchTorrent = (tracker) => async (req, res, next) => {
     ]);
 
     if (!torrent) {
-      res.status(404).send(`Torrent with info hash ${infoHash} does not exist`);
+      res.status(404).send("Torrent does not exist");
       return;
     }
 
@@ -427,7 +457,7 @@ export const fetchTorrent = (tracker) => async (req, res, next) => {
 
     const [embellishedTorrent] = await embellishTorrentsWithTrackerScrape(
       tracker,
-      [torrent]
+      [torrent],
     );
 
     let groupTorrents = [];
@@ -438,16 +468,16 @@ export const fetchTorrent = (tracker) => async (req, res, next) => {
 
       if (group) {
         const otherIds = group.torrents.filter(
-          (id) => id.toString() !== embellishedTorrent._id.toString()
+          (id) => id.toString() !== embellishedTorrent._id.toString(),
         );
         groupTorrents = await Torrent.find(
           { _id: { $in: otherIds } },
           { name: 1, infoHash: 1, freeleech: 1, type: 1, created: 1 },
-          { sort: { created: -1 } }
+          { sort: { created: -1 } },
         ).lean();
         groupTorrents = await embellishTorrentsWithTrackerScrape(
           tracker,
-          groupTorrents
+          groupTorrents,
         );
       }
     }
@@ -801,14 +831,14 @@ export const addVote = async (req, res, next) => {
         {
           $addToSet: {
             [vote === "up" ? "upvotes" : "downvotes"]: mongoose.Types.ObjectId(
-              req.userId
+              req.userId,
             ),
           },
           $pull: {
             [vote === "down" ? "upvotes" : "downvotes"]:
               mongoose.Types.ObjectId(req.userId),
           },
-        }
+        },
       );
       res.sendStatus(200);
     } else {
@@ -835,10 +865,10 @@ export const removeVote = async (req, res, next) => {
         {
           $pull: {
             [vote === "up" ? "upvotes" : "downvotes"]: mongoose.Types.ObjectId(
-              req.userId
+              req.userId,
             ),
           },
-        }
+        },
       );
       res.sendStatus(200);
     } else {
@@ -866,7 +896,7 @@ export const toggleFreeleech = async (req, res, next) => {
 
     await Torrent.findOneAndUpdate(
       { infoHash },
-      { $set: { freeleech: !torrent.freeleech } }
+      { $set: { freeleech: !torrent.freeleech } },
     );
     res.sendStatus(200);
   } catch (e) {
@@ -892,7 +922,7 @@ export const toggleBookmark = async (req, res, next) => {
 
     await User.findOneAndUpdate(
       { _id: req.userId },
-      { [isBookmarked ? "$pull" : "$addToSet"]: { bookmarks: torrent._id } }
+      { [isBookmarked ? "$pull" : "$addToSet"]: { bookmarks: torrent._id } },
     );
     res.sendStatus(200);
   } catch (e) {
@@ -904,7 +934,7 @@ export const listTags = async (req, res, next) => {
   try {
     const torrents = await Torrent.find(
       { tags: { $exists: true, $not: { $size: 0 } } },
-      { tags: 1 }
+      { tags: 1 },
     ).lean();
 
     const uniqueTags = new Set();

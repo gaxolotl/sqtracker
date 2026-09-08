@@ -4,12 +4,7 @@ import Torrent from "../schema/torrent";
 import config from "../../../config";
 
 (async () => {
-  await mongoose.connect(config.envs.SQ_MONGO_URL, {
-    useNewUrlParser: true,
-    useFindAndModify: false,
-    useUnifiedTopology: true,
-    useCreateIndex: true,
-  });
+  await mongoose.connect(config.envs.SQ_MONGO_URL);
 
   console.log("[sq] connected to mongodb successfully");
 

@@ -24,7 +24,8 @@ const auth = async (req, res, next) => {
         res.sendStatus(500);
       }
     } catch (err) {
-      res.status(500).send(err);
+      console.error("[sq] authentication error:", err.message);
+      res.status(500).send("Invalid authentication token");
     }
   } else if (
     req.headers["x-sq-public-access"] === "true" &&
