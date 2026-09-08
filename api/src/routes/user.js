@@ -21,11 +21,9 @@ const limiter = ratelimit({
   },
 });
 
-router.use(limiter);
-
 export default (tracker) => {
-  router.get("/:username", fetchUser(tracker));
-  router.post("/ban/:username", banUser);
-  router.post("/unban/:username", unbanUser);
+  router.get("/:username", limiter, fetchUser(tracker));
+  router.post("/ban/:username", limiter, banUser);
+  router.post("/unban/:username", limiter, unbanUser);
   return router;
 };

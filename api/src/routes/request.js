@@ -29,15 +29,13 @@ const limiter = ratelimit({
   },
 });
 
-router.use(limiter);
-
 export default () => {
-  router.post("/new", createRequest);
-  router.get("/page/:page", getRequests);
-  router.get("/:index", fetchRequest);
-  router.delete("/:index", deleteRequest);
-  router.post("/comment/:requestId", addCommentRequest);
-  router.post("/suggest/:requestId", addCandidate);
-  router.post("/accept/:requestId", acceptCandidate);
+  router.post("/new", limiter, createRequest);
+  router.get("/page/:page", limiter, getRequests);
+  router.get("/:index", limiter, fetchRequest);
+  router.delete("/:index", limiter, deleteRequest);
+  router.post("/comment/:requestId", limiter, addCommentRequest);
+  router.post("/suggest/:requestId", limiter, addCandidate);
+  router.post("/accept/:requestId", limiter, acceptCandidate);
   return router;
 };

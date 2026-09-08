@@ -14,3 +14,4 @@ letsencrypt/
 *.orig
 *.diff
 *.patch
+.opencode/

@@ -25,11 +25,9 @@ const limiter = ratelimit({
   },
 });
 
-router.use(limiter);
-
 export default () => {
-  router.get("/page/:page", getReports);
-  router.post("/resolve/:reportId", setReportResolved);
-  router.get("/:reportId", fetchReport);
+  router.get("/page/:page", limiter, getReports);
+  router.post("/resolve/:reportId", limiter, setReportResolved);
+  router.get("/:reportId", limiter, fetchReport);
   return router;
 };

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Request from "../schema/request.js";
 import Comment from "../schema/comment.js";
 import Torrent from "../schema/torrent.js";
@@ -243,8 +244,15 @@ export const addCandidate = async (req, res, next) => {
       }
 
       const { infoHash } = req.body;
+
+      const { requestId } = req.params;
+      if (!mongoose.isValidObjectId(requestId)) {
+        res.status(404).send("Request does not exist");
+        return;
+      }
+
       const request = await Request.findOne({
-        _id: req.params.requestId,
+        _id: requestId,
       }).lean();
 
       const torrent = await Torrent.findOne(
@@ -269,7 +277,7 @@ export const addCandidate = async (req, res, next) => {
       }
 
       await Request.findOneAndUpdate(
-        { _id: req.params.requestId },
+        { _id: requestId },
         {
           $addToSet: {
             candidates: { torrent: torrent._id, suggestedBy: req.userId },
@@ -295,8 +303,15 @@ export const acceptCandidate = async (req, res, next) => {
       }
 
       const { infoHash } = req.body;
+
+      const { requestId } = req.params;
+      if (!mongoose.isValidObjectId(requestId)) {
+        res.status(404).send("Request does not exist");
+        return;
+      }
+
       const request = await Request.findOne({
-        _id: req.params.requestId,
+        _id: requestId,
       }).lean();
 
       if (req.userId.toString() !== request.createdBy.toString()) {
@@ -322,7 +337,7 @@ export const acceptCandidate = async (req, res, next) => {
       }
 
       await Request.findOneAndUpdate(
-        { _id: req.params.requestId },
+        { _id: requestId },
         { $set: { fulfilledBy: torrent._id } },
       );
 

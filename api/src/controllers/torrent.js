@@ -264,6 +264,8 @@ export const editTorrent = async (req, res, next) => {
         .split(",")
         .map((t) => formatTag(t))
         .filter(Boolean);
+      const mediaInfo =
+        typeof req.body.mediaInfo === "string" ? req.body.mediaInfo : undefined;
 
       const clone = { ...torrent, name };
       createNGrams(clone, ["name"]);
@@ -279,7 +281,7 @@ export const editTorrent = async (req, res, next) => {
             description,
             tags,
           },
-          mediaInfo: req.body.mediaInfo,
+          mediaInfo,
         },
       );
 

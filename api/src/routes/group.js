@@ -24,10 +24,8 @@ const limiter = ratelimit({
   },
 });
 
-router.use(limiter);
-
 export default () => {
-  router.post("/remove/:infoHash", removeTorrentFromGroup);
-  router.get("/search", findFuzzyGroupMatches);
+  router.post("/remove/:infoHash", limiter, removeTorrentFromGroup);
+  router.get("/search", limiter, findFuzzyGroupMatches);
   return router;
 };

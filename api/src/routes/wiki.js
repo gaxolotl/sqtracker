@@ -26,12 +26,10 @@ const limiter = ratelimit({
   },
 });
 
-router.use(limiter);
-
 export default () => {
-  router.post("/new", createWiki);
-  router.post("/update/:wikiId", updateWiki);
-  router.get("*", getWiki);
-  router.delete("*", deleteWiki);
+  router.post("/new", limiter, createWiki);
+  router.post("/update/:wikiId", limiter, updateWiki);
+  router.get("*", limiter, getWiki);
+  router.delete("*", limiter, deleteWiki);
   return router;
 };
