@@ -3,14 +3,33 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
 import { apiFetch } from "@/lib/api";
 import bg from "@/locales/bg.json";
+import de from "@/locales/de.json";
 import en from "@/locales/en.json";
+import eo from "@/locales/eo.json";
+import es from "@/locales/es.json";
+import fr from "@/locales/fr.json";
+import it from "@/locales/it.json";
+import ru from "@/locales/ru.json";
+import zh from "@/locales/zh.json";
 
-export type Locale = "en" | "bg";
+export type Locale = "en" | "bg" | "de" | "eo" | "es" | "fr" | "it" | "ru" | "zh";
 type MessageKey = keyof typeof en;
 type Variables = Record<string, string | number>;
-const supportedLocales: Locale[] = ["en", "bg"];
+export const supportedLocales: Locale[] = ["en", "bg", "de", "eo", "es", "fr", "it", "ru", "zh"];
 
-const dictionaries: Record<Locale, Record<MessageKey, string>> = { en, bg };
+export const localeNames: Record<Locale, string> = {
+  en: "English",
+  bg: "Български",
+  de: "Deutsch",
+  eo: "Esperanto",
+  es: "Español",
+  fr: "Français",
+  it: "Italiano",
+  ru: "Русский",
+  zh: "中文",
+};
+
+const dictionaries: Record<Locale, Record<MessageKey, string>> = { en, bg, de, eo, es, fr, it, ru, zh };
 
 type I18nContextValue = {
   locale: Locale;
@@ -30,7 +49,8 @@ function subscribe(callback: () => void) {
 }
 
 function getSnapshot(): Locale {
-  return window.localStorage.getItem("sq-locale") === "bg" ? "bg" : "en";
+  const stored = window.localStorage.getItem("sq-locale") as Locale | null;
+  return stored && supportedLocales.includes(stored) ? stored : "en";
 }
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
