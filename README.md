@@ -1,5 +1,5 @@
 # ■ sqtrackr
-> continuing the legacy of sqtrackr
+> continuing the legacy of sqtracker.
 
 ![Latest stable release](https://badgen.net/github/release/gaxolotl/sqtrackr/stable)
 [![License GPLv3](https://badgen.net/badge/license/GPLv3/blue)](./LICENSE)
