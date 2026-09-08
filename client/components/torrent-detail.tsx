@@ -44,20 +44,43 @@ function charsToString(values: number[]) {
   return String.fromCharCode(...values);
 }
 
+function bufferData(value: unknown) {
+  if (
+    value &&
+    typeof value === "object" &&
+    Array.isArray((value as { data?: unknown }).data)
+  ) {
+    const data = (value as { data: unknown[] }).data;
+    if (data.every((part) => typeof part === "number")) return data as number[];
+  }
+  return null;
+}
+
 function decodePath(value: FileRecord["path"] | FileRecord["name"]) {
-  if (typeof value === "string") return value;
+  if (typeof value === "string") {
+    // Paths stored by the bumped API while bencode returned Uint8Array look
+    // like "99,111,110,..." (comma-joined decimal bytes). Repair on display.
+    if (/^(?:\d{1,3},)*\d{1,3}$/.test(value)) {
+      return charsToString(value.split(",").map(Number));
+    }
+    return value;
+  }
   if (Array.isArray(value)) {
     if (value.length > 0 && value.every((part) => typeof part === "number")) {
       return charsToString(value as number[]);
     }
     return value
-      .map((part) => (typeof part === "string" ? part : JSON.stringify(part)))
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (typeof part === "number") return String.fromCharCode(part);
+        const bytes = bufferData(part);
+        return bytes ? charsToString(bytes) : "";
+      })
+      .filter(Boolean)
       .join("/");
   }
-  if (value && typeof value === "object" && Array.isArray(value.data)) {
-    return charsToString(value.data);
-  }
-  return "";
+  const bytes = bufferData(value);
+  return bytes ? charsToString(bytes) : "";
 }
 
 function fileLabel(file: FileRecord) {
@@ -179,9 +202,9 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
             <section className="copy-section">
               <h2>Description</h2>
               <p>{data.description}</p>
-              {data.tags?.length ? (
+              {data.tags?.filter(Boolean).length ? (
                 <div className="tag-row">
-                  {data.tags.map((tag) => (
+                  {data.tags.filter(Boolean).map((tag) => (
                     <Link className="tag" href={`/tags/${encodeURIComponent(tag)}`} key={tag}>
                       {tag}
                     </Link>

@@ -10,6 +10,9 @@
   --border: #e1e4e8;
   --text: #17191d;
   --muted: #6f737c;
+  --tooltip-bg: #26282d;
+  --tooltip-fg: #f2f3f5;
+  --tooltip-border: rgba(255, 255, 255, 0.12);
   --sidebar-width: 330px;
   color-scheme: light;
 }
@@ -22,6 +25,10 @@
   --border: #303236;
   --text: #f5f5f4;
   --muted: #aaa9ad;
+  --tooltip-bg: #26282e;
+  --tooltip-fg: #f2f3f5;
+  --tooltip-border: #454950;
+  --sidebar-width: 330px;
   color-scheme: dark;
 }
 
@@ -816,9 +823,11 @@ h1 {
   width: max-content;
   max-width: min(340px, 70vw);
   padding: 9px 11px;
-  background: var(--text);
+  background: var(--tooltip-bg);
+  border: 1px solid var(--tooltip-border);
   border-radius: 5px;
-  color: var(--page);
+  color: var(--tooltip-fg);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 22%);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.35;

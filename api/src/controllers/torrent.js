@@ -21,6 +21,15 @@ const getExtensionBlacklist = () =>
 
 const urlReservedCharRegex = /[&$+,/:;=?@#<>\[\]{}|\\\^%]/g;
 
+// bencode v4 decodes byte strings as Uint8Array, whose .toString() returns
+// comma-joined decimal byte values instead of text. Decode bytes explicitly.
+const bytesToString = (value) => {
+  if (Buffer.isBuffer(value) || value instanceof Uint8Array) {
+    return Buffer.from(value).toString("utf8");
+  }
+  return String(value);
+};
+
 const formatTag = (tag) =>
   tag
     .trim()
@@ -101,13 +110,13 @@ export const uploadTorrent = async (req, res, next) => {
       let files;
       if (parsed.info.files) {
         files = parsed.info.files.map((file) => ({
-          path: file.path.map((tok) => tok.toString()).join("/"),
+          path: file.path.map((tok) => bytesToString(tok)).join("/"),
           size: file.length,
         }));
       } else {
         files = [
           {
-            path: parsed.info.name.toString(),
+            path: bytesToString(parsed.info.name),
             size: parsed.info.length,
           },
         ];
@@ -165,7 +174,7 @@ export const uploadTorrent = async (req, res, next) => {
         upvotes: [],
         downvotes: [],
         freeleech: false,
-        tags: (req.body.tags ?? "").split(",").map((t) => formatTag(t)),
+        tags: (req.body.tags ?? "").split(",").map((t) => formatTag(t)).filter(Boolean),
         group: groupId,
         mediaInfo: req.body.mediaInfo,
       });
@@ -241,7 +250,7 @@ export const editTorrent = async (req, res, next) => {
             type: req.body.type,
             source: req.body.source,
             description: req.body.description,
-            tags: (req.body.tags ?? "").split(",").map((t) => formatTag(t)),
+            tags: (req.body.tags ?? "").split(",").map((t) => formatTag(t)).filter(Boolean),
           },
           mediaInfo: req.body.mediaInfo,
         }
@@ -275,7 +284,7 @@ export const downloadTorrent = async (req, res, next) => {
     delete parsed["announce-list"];
     parsed.info.private = 1;
 
-    const fileName = `${parsed.info.name.toString()} - ${
+    const fileName = `${bytesToString(parsed.info.name)} - ${
       process.env.SQ_SITE_NAME
     }.torrent`;
 
