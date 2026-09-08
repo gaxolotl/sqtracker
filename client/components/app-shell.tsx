@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-context";
-import { useI18n, type Locale } from "@/components/i18n-context";
+import { useI18n, localeNames, supportedLocales } from "@/components/i18n-context";
 import clientPackage from "@/package.json";
 import {
   BarChart3,
@@ -162,7 +162,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
             {languageOpen ? (
               <div className="language-options" role="menu">
-                {(["en", "bg"] as Locale[]).map((option) => (
+                {supportedLocales.map((option) => (
                   <button
                     className={option === locale ? "language-option active" : "language-option"}
                     key={option}
@@ -170,7 +170,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     role="menuitem"
                     onClick={() => { setLocale(option); setLanguageOpen(false); }}
                   >
-                    <span>{option === "en" ? t("english") : t("bulgarian")}</span>
+                    <span>{localeNames[option]}</span>
                     <strong>{option.toUpperCase()}</strong>
                   </button>
                 ))}
