@@ -31,17 +31,15 @@ const limiter = ratelimit({
   },
 });
 
-router.use(limiter);
-
 export default () => {
-  router.post("/new", createAnnouncement);
-  router.get("/pinned", getPinnedAnnouncements);
-  router.get("/latest", getLatestAnnouncement);
-  router.get("/page/:page", getAnnouncements);
-  router.get("/:slug", fetchAnnouncement);
-  router.delete("/:slug", deleteAnnouncement);
-  router.post("/pin/:announcementId/:action", pinAnnouncement);
-  router.post("/edit/:announcementId", editAnnouncement);
-  router.post("/comment/:announcementId", addComment);
+  router.post("/new", limiter, createAnnouncement);
+  router.get("/pinned", limiter, getPinnedAnnouncements);
+  router.get("/latest", limiter, getLatestAnnouncement);
+  router.get("/page/:page", limiter, getAnnouncements);
+  router.get("/:slug", limiter, fetchAnnouncement);
+  router.delete("/:slug", limiter, deleteAnnouncement);
+  router.post("/pin/:announcementId/:action", limiter, pinAnnouncement);
+  router.post("/edit/:announcementId", limiter, editAnnouncement);
+  router.post("/comment/:announcementId", limiter, addComment);
   return router;
 };

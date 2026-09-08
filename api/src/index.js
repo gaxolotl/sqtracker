@@ -239,7 +239,7 @@ validateConfig(config).then(() => {
       next(err);
       return;
     }
-    console.error(`[sq] error in ${req.url}:`, err);
+    console.error("[sq] error in", req.url, err);
     res.type("text/plain").status(500).send("sqtracker API error");
   });
 

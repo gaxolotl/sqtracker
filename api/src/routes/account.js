@@ -34,20 +34,18 @@ const limiter = ratelimit({
   },
 });
 
-router.use(limiter);
-
 export default (tracker, mail) => {
-  router.get("/invites", fetchInvites);
-  router.post("/generate-invite", generateInvite(mail));
-  router.post("/change-password", changePassword(mail));
-  router.get("/get-stats", getUserStats);
-  router.get("/get-role", getUserRole);
-  router.get("/get-verified", getUserVerifiedEmailStatus);
-  router.post("/buy", buyItems);
-  router.get("/totp/generate", generateTotpSecret);
-  router.post("/totp/enable", enableTotp);
-  router.post("/totp/disable", disableTotp);
-  router.post("/delete", deleteAccount);
-  router.get("/bookmarks", getUserBookmarks(tracker));
+  router.get("/invites", limiter, fetchInvites);
+  router.post("/generate-invite", limiter, generateInvite(mail));
+  router.post("/change-password", limiter, changePassword(mail));
+  router.get("/get-stats", limiter, getUserStats);
+  router.get("/get-role", limiter, getUserRole);
+  router.get("/get-verified", limiter, getUserVerifiedEmailStatus);
+  router.post("/buy", limiter, buyItems);
+  router.get("/totp/generate", limiter, generateTotpSecret);
+  router.post("/totp/enable", limiter, enableTotp);
+  router.post("/totp/disable", limiter, disableTotp);
+  router.post("/delete", limiter, deleteAccount);
+  router.get("/bookmarks", limiter, getUserBookmarks(tracker));
   return router;
 };

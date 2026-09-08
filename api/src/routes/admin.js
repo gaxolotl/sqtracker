@@ -25,11 +25,9 @@ const limiter = ratelimit({
   },
 });
 
-router.use(limiter);
-
 export default (tracker) => {
-  router.get("/stats", getStats(tracker));
-  router.post("/stats/refresh", refreshStats(tracker));
-  router.get("/torrent/:infoHash/peers", listTorrentPeers(tracker));
+  router.get("/stats", limiter, getStats(tracker));
+  router.post("/stats/refresh", limiter, refreshStats(tracker));
+  router.get("/torrent/:infoHash/peers", limiter, listTorrentPeers(tracker));
   return router;
 };
