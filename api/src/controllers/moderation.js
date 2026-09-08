@@ -1,10 +1,10 @@
-import Report from "../schema/report";
-import Torrent from "../schema/torrent";
-import User from "../schema/user";
-import Progress from "../schema/progress";
-import Invite from "../schema/invite";
-import Request from "../schema/request";
-import Comment from "../schema/comment";
+import Report from "../schema/report.js";
+import Torrent from "../schema/torrent.js";
+import User from "../schema/user.js";
+import Progress from "../schema/progress.js";
+import Invite from "../schema/invite.js";
+import Request from "../schema/request.js";
+import Comment from "../schema/comment.js";
 
 export const createReport = async (req, res, next) => {
   if (req.body.reason) {

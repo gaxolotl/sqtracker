@@ -9,7 +9,7 @@ import {
   getPinnedAnnouncements,
   pinAnnouncement,
   getLatestAnnouncement,
-} from "../controllers/announcement";
+} from "../controllers/announcement.js";
 
 const router = express.Router();
 

@@ -1,6 +1,6 @@
 import slugify from "slugify";
-import Wiki from "../schema/wiki";
-import { envFlag } from "../utils/env";
+import Wiki from "../schema/wiki.js";
+import { envFlag } from "../utils/env.js";
 
 const slugRegex = /^\/([a-z0-9-_/])*/i;
 
