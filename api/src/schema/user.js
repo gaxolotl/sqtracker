@@ -27,6 +27,15 @@ const User = new mongoose.Schema({
     backup: [String],
   },
   bookmarks: [mongoose.Schema.ObjectId],
+  bio: String,
+  location: String,
+  website: String,
+  avatar: {
+    data: Buffer,
+    contentType: String,
+  },
+  avatarUpdated: Number,
+  rssToken: { type: String, unique: true, sparse: true },
 });
 
 export default mongoose.model("user", User);

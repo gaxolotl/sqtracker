@@ -6,6 +6,7 @@ import Invite from "../schema/invite.js";
 import Request from "../schema/request.js";
 import Comment from "../schema/comment.js";
 import { countSwarmPeers } from "../tracker/swarm-stats.js";
+import { canModerate } from "../utils/roles.js";
 
 export const createReport = async (req, res, next) => {
   if (req.body.reason) {
@@ -39,7 +40,7 @@ export const createReport = async (req, res, next) => {
 
 export const fetchReport = async (req, res, next) => {
   try {
-    if (req.userRole !== "admin") {
+    if (!canModerate(req.userRole)) {
       res.status(401).send("You do not have permission to view a report");
       return;
     }
@@ -52,10 +53,10 @@ export const fetchReport = async (req, res, next) => {
     }
 
     report.reportedBy = await User.findOne({ _id: report.reportedBy }).select(
-      "username created"
+      "username created",
     );
     report.torrent = await Torrent.findOne({ _id: report.torrent }).select(
-      "name description infoHash created"
+      "name description infoHash created",
     );
 
     res.json(report);
@@ -67,7 +68,7 @@ export const fetchReport = async (req, res, next) => {
 export const getReports = async (req, res, next) => {
   const pageSize = 25;
   try {
-    if (req.userRole !== "admin") {
+    if (!canModerate(req.userRole)) {
       res.status(401).send("You do not have permission to view reports");
       return;
     }
@@ -142,14 +143,14 @@ export const getReports = async (req, res, next) => {
 
 export const setReportResolved = async (req, res, next) => {
   try {
-    if (req.userRole !== "admin") {
+    if (!canModerate(req.userRole)) {
       res.status(401).send("You do not have permission to resolve a report");
       return;
     }
 
     await Report.findOneAndUpdate(
       { _id: req.params.reportId },
-      { $set: { solved: true } }
+      { $set: { solved: true } },
     );
 
     res.sendStatus(200);
@@ -159,46 +160,46 @@ export const setReportResolved = async (req, res, next) => {
 };
 
 const computeTrackerStats = async (tracker) => {
-    const registeredUsers = await User.countDocuments();
-    const bannedUsers = await User.countDocuments({ banned: true });
-    const uploadedTorrents = await Torrent.countDocuments();
-    const completedDownloads = await Progress.countDocuments({ left: 0 });
-    const totalInvitesSent = await Invite.countDocuments();
-    const invitesAccepted = await Invite.countDocuments({ claimed: true });
-    const totalRequests = await Request.countDocuments({});
-    const filledRequests = await Request.countDocuments({
-      fulfilledBy: { $exists: true },
-    });
-    const totalComments = await Comment.countDocuments();
+  const registeredUsers = await User.countDocuments();
+  const bannedUsers = await User.countDocuments({ banned: true });
+  const uploadedTorrents = await Torrent.countDocuments();
+  const completedDownloads = await Progress.countDocuments({ left: 0 });
+  const totalInvitesSent = await Invite.countDocuments();
+  const invitesAccepted = await Invite.countDocuments({ claimed: true });
+  const totalRequests = await Request.countDocuments({});
+  const filledRequests = await Request.countDocuments({
+    fulfilledBy: { $exists: true },
+  });
+  const totalComments = await Comment.countDocuments();
 
-    let activeTorrents = 0;
-    let peers = 0;
-    let seeders = 0;
-    let leechers = 0;
+  let activeTorrents = 0;
+  let peers = 0;
+  let seeders = 0;
+  let leechers = 0;
 
-    Object.keys(tracker.torrents).forEach((infoHash) => {
-      const counts = countSwarmPeers(tracker.torrents[infoHash]);
-      if (counts.peers > 0) activeTorrents++;
-      peers += counts.peers;
-      seeders += counts.seeders;
-      leechers += counts.leechers;
-    });
+  Object.keys(tracker.torrents).forEach((infoHash) => {
+    const counts = countSwarmPeers(tracker.torrents[infoHash]);
+    if (counts.peers > 0) activeTorrents++;
+    peers += counts.peers;
+    seeders += counts.seeders;
+    leechers += counts.leechers;
+  });
 
-    return {
-      registeredUsers,
-      bannedUsers,
-      uploadedTorrents,
-      completedDownloads,
-      totalInvitesSent,
-      invitesAccepted,
-      totalRequests,
-      filledRequests,
-      totalComments,
-      activeTorrents,
-      peers,
-      seeders,
-      leechers,
-    };
+  return {
+    registeredUsers,
+    bannedUsers,
+    uploadedTorrents,
+    completedDownloads,
+    totalInvitesSent,
+    invitesAccepted,
+    totalRequests,
+    filledRequests,
+    totalComments,
+    activeTorrents,
+    peers,
+    seeders,
+    leechers,
+  };
 };
 
 export const getStats = (tracker) => async (req, res, next) => {
@@ -240,7 +241,6 @@ export const refreshStats = (tracker) => async (req, res, next) => {
   }
 };
 
-
 export const listTorrentPeers = (tracker) => async (req, res, next) => {
   try {
     if (req.userRole !== "admin") {
@@ -260,7 +260,8 @@ export const listTorrentPeers = (tracker) => async (req, res, next) => {
       const address = `${peer.ip}:${peer.port}`;
       const current = byPeerId.get(peer.peerId);
       if (current) {
-        if (!current.addresses.includes(address)) current.addresses.push(address);
+        if (!current.addresses.includes(address))
+          current.addresses.push(address);
         if (peer.complete) current.seeder = true;
       } else {
         byPeerId.set(peer.peerId, {
@@ -275,7 +276,7 @@ export const listTorrentPeers = (tracker) => async (req, res, next) => {
     peers.sort(
       (a, b) =>
         (a.seeder === b.seeder ? 0 : a.seeder ? -1 : 1) ||
-        a.addresses[0].localeCompare(b.addresses[0])
+        a.addresses[0].localeCompare(b.addresses[0]),
     );
 
     // Resolve the registered user behind each announce (swarm stores the
@@ -283,7 +284,7 @@ export const listTorrentPeers = (tracker) => async (req, res, next) => {
     const usernameByPeerId = new Map();
     if (peers.length) {
       const rawPeerIds = peers.map((peer) =>
-        Buffer.from(peer.peerId, "hex").toString("binary")
+        Buffer.from(peer.peerId, "hex").toString("binary"),
       );
       const progress = await Progress.find({
         infoHash,
@@ -296,7 +297,7 @@ export const listTorrentPeers = (tracker) => async (req, res, next) => {
         ...new Set(
           progress
             .map((record) => record.userId && String(record.userId))
-            .filter(Boolean)
+            .filter(Boolean),
         ),
       ];
       const usernames = new Map();
@@ -317,7 +318,7 @@ export const listTorrentPeers = (tracker) => async (req, res, next) => {
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const perPage = Math.min(
       Math.max(parseInt(req.query.perPage, 10) || 10, 1),
-      100
+      100,
     );
     const start = (page - 1) * perPage;
 

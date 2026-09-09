@@ -7,6 +7,7 @@ import type { TrackerConfig } from "@/lib/types";
 const FALLBACK_CONFIG: TrackerConfig = {
   siteName: "sqtracker demo",
   siteDescription: "A focused, private BitTorrent tracker.",
+  showPageInTitle: true,
   allowRegister: "open",
   allowAnonymousUploads: false,
   categories: {
@@ -20,9 +21,19 @@ const FALLBACK_CONFIG: TrackerConfig = {
   siteWideFreeleech: false,
   allowUnregisteredView: false,
   defaultLocale: "en",
+  avatarMaxResolution: 512,
+  avatarMaxSizeKb: 512,
+  allowGifAvatars: true,
 };
 
 let sharedConfigPromise: Promise<TrackerConfig> | null = null;
+
+export function refreshTrackerConfig() {
+  sharedConfigPromise = null;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("sq:config"));
+  }
+}
 
 function loadConfig(): Promise<TrackerConfig> {
   if (!sharedConfigPromise) {
@@ -38,11 +49,16 @@ export function useTrackerConfig() {
 
   useEffect(() => {
     let active = true;
-    loadConfig().then((result) => {
-      if (active) setConfig(result);
-    });
+    const refresh = () => {
+      void loadConfig().then((result) => {
+        if (active) setConfig(result);
+      });
+    };
+    refresh();
+    window.addEventListener("sq:config", refresh);
     return () => {
       active = false;
+      window.removeEventListener("sq:config", refresh);
     };
   }, []);
 

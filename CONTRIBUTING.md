@@ -8,7 +8,7 @@ Please follow existing conventions in code style. If you PR any messy, redundant
 
 ### Linting
 
-All contributions **must** be linted with the existing `yarn lint` command. Better yet, use an editor or IDE that runs the linting for you, such as WebStorm. This will keep code style mostly consistent.
+All client contributions **must** pass `pnpm --filter @sqtracker/client lint` and `pnpm --filter @sqtracker/client build`. Use pnpm for every workspace command.
 
 ### Comments
 
@@ -16,4 +16,4 @@ If you think a section of code is hard to understand without supporting comments
 
 ### CSS
 
-When working on the front-end, always make use of the existing theme. Do not style with arbitrary `px` values etc. unless absolutely necessary. Please read up on [styled-system](https://github.com/styled-system/styled-system) before making front-end changes.
+When working on the front-end, use the existing CSS variables and responsive layout conventions. Preserve the flat visual language and do not introduce gradients.

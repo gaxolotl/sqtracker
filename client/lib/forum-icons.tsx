@@ -1,0 +1,73 @@
+import {
+  BookOpen,
+  Bug,
+  Camera,
+  Clapperboard,
+  Coffee,
+  Film,
+  Gamepad2,
+  Globe,
+  GraduationCap,
+  Headphones,
+  Heart,
+  Joystick,
+  Lightbulb,
+  Megaphone,
+  MessageCircle,
+  MessageSquare,
+  MessagesSquare,
+  Monitor,
+  Music,
+  Newspaper,
+  Palette,
+  Plane,
+  Rocket,
+  Shield,
+  Smartphone,
+  Star,
+  Trophy,
+  Tv,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
+
+export const FORUM_ICONS: { name: string; Icon: LucideIcon }[] = [
+  { name: "messages-square", Icon: MessagesSquare },
+  { name: "message-square", Icon: MessageSquare },
+  { name: "message-circle", Icon: MessageCircle },
+  { name: "newspaper", Icon: Newspaper },
+  { name: "megaphone", Icon: Megaphone },
+  { name: "film", Icon: Film },
+  { name: "clapperboard", Icon: Clapperboard },
+  { name: "music", Icon: Music },
+  { name: "headphones", Icon: Headphones },
+  { name: "gamepad-2", Icon: Gamepad2 },
+  { name: "joystick", Icon: Joystick },
+  { name: "book-open", Icon: BookOpen },
+  { name: "graduation-cap", Icon: GraduationCap },
+  { name: "monitor", Icon: Monitor },
+  { name: "smartphone", Icon: Smartphone },
+  { name: "tv", Icon: Tv },
+  { name: "camera", Icon: Camera },
+  { name: "palette", Icon: Palette },
+  { name: "wrench", Icon: Wrench },
+  { name: "rocket", Icon: Rocket },
+  { name: "heart", Icon: Heart },
+  { name: "star", Icon: Star },
+  { name: "lightbulb", Icon: Lightbulb },
+  { name: "coffee", Icon: Coffee },
+  { name: "globe", Icon: Globe },
+  { name: "trophy", Icon: Trophy },
+  { name: "shield", Icon: Shield },
+  { name: "bug", Icon: Bug },
+  { name: "plane", Icon: Plane },
+];
+
+const ICON_BY_NAME = new Map(
+  FORUM_ICONS.map((entry) => [entry.name, entry.Icon]),
+);
+
+export function forumIcon(name?: string): LucideIcon {
+  if (!name) return MessagesSquare;
+  return ICON_BY_NAME.get(name) ?? MessagesSquare;
+}

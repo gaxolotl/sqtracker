@@ -14,6 +14,7 @@ It implements all of the features required to run a private (or public) tracker 
   * Registration modes (open / closed / invite only)
   * Sending of invites
   * Account management (2FA, password resets etc.)
+  * Custom profiles with WebP avatars, bios, locations and websites
   * Bonus points system (purchase invites, upload etc.)
   * Option to browse torrents without logging in (for search engine discovery)
 * Torrent management
@@ -32,32 +33,35 @@ It implements all of the features required to run a private (or public) tracker 
   * Commenting on torrents and announcements
   * Up / down voting torrents
   * Requests system
+  * Categorised discussion forums with Markdown posts
+  * Private one-to-one and group conversations with unread tracking
 * Moderation
   * Staff / admin privileges
   * Reporting torrents to be reviewed by staff
   * Detailed stats available to admins
+  * Runtime-safe site settings available to admins without a service restart
   * Wiki system
   * Announcements / news posts
   * Ban / unban users
 * Tracker appearance
   * Configurable theme / CSS
-  
+
 ## Roadmap
 
 The roadmap is still being expanded.
 
-* Forum support & direct messages
-* Better profiles (avatar, bio etc.)
 * Premoderation option
 * Anti-cheat
-  
+
 ## Configuration
 
-All configuration is provided via a single JavaScript file named `config.js`. This file must export an object containing 2 keys: `envs` and `secrets`.
+Initial configuration is provided via a single JavaScript file named `config.js`. This file must export an object containing 2 keys: `envs` and `secrets`.
 
 An example configuration can be found in `config.example.js`. This file contains examples and explanations for each config value.
 
 If your configuration is not valid, sqtrackr will fail to start.
+
+After setup, admins can change runtime-safe site, tracker, economy, theme, and avatar settings from `/settings`. These overrides are stored in MongoDB and apply without restarting the API. Infrastructure settings and secrets (database, URLs, ports, SMTP, JWT and server secrets) intentionally remain in `config.js` and require a restart.
 
 ### The initial admin user
 
@@ -71,7 +75,7 @@ An sqtrackr deployment is made up of 4 separate components. These are:
 
 #### 1. The sqtrackr API service
 
-The sqtrackr API service handles all actions taken by users (authentication, uploads, searching etc.), implements the BitTorrent tracker specification to handle announces and scrapes, and provides the RSS feed. 
+The sqtrackr API service handles all actions taken by users (authentication, uploads, searching etc.), implements the BitTorrent tracker specification to handle announces and scrapes, and provides the RSS feed.
 
 #### 2. The sqtrackr client service
 
@@ -85,7 +89,7 @@ The sqtrackr client service provides the modern, responsive web interface that u
 
 The HTTP proxy allows the client, API, and BitTorrent tracker to all be accessible via a single endpoint.
 
-Traefik is recommended and is configured by default. An Nginx config file is also provided for those that prefer it and the `docker-compose.yml` file contains an Nginx block that can be enabled. 
+Traefik is recommended and is configured by default. An Nginx config file is also provided for those that prefer it and the `docker-compose.yml` file contains an Nginx block that can be enabled.
 
 ### Deploying with Docker compose
 

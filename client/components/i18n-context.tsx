@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
 import { apiFetch } from "@/lib/api";
 import bg from "@/locales/bg.json";
 import de from "@/locales/de.json";
@@ -12,10 +19,21 @@ import it from "@/locales/it.json";
 import ru from "@/locales/ru.json";
 import zh from "@/locales/zh.json";
 
-export type Locale = "en" | "bg" | "de" | "eo" | "es" | "fr" | "it" | "ru" | "zh";
-type MessageKey = keyof typeof en;
+export type Locale =
+  "en" | "bg" | "de" | "eo" | "es" | "fr" | "it" | "ru" | "zh";
+export type MessageKey = keyof typeof en;
 type Variables = Record<string, string | number>;
-export const supportedLocales: Locale[] = ["en", "bg", "de", "eo", "es", "fr", "it", "ru", "zh"];
+export const supportedLocales: Locale[] = [
+  "en",
+  "bg",
+  "de",
+  "eo",
+  "es",
+  "fr",
+  "it",
+  "ru",
+  "zh",
+];
 
 export const localeNames: Record<Locale, string> = {
   en: "English",
@@ -29,7 +47,17 @@ export const localeNames: Record<Locale, string> = {
   zh: "中文",
 };
 
-const dictionaries: Record<Locale, Record<MessageKey, string>> = { en, bg, de, eo, es, fr, it, ru, zh };
+const dictionaries: Record<Locale, Record<MessageKey, string>> = {
+  en,
+  bg,
+  de,
+  eo,
+  es,
+  fr,
+  it,
+  ru,
+  zh,
+};
 
 type I18nContextValue = {
   locale: Locale;
@@ -54,7 +82,11 @@ function getSnapshot(): Locale {
 }
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const locale = useSyncExternalStore<Locale>(subscribe, getSnapshot, () => "en");
+  const locale = useSyncExternalStore<Locale>(
+    subscribe,
+    getSnapshot,
+    () => "en",
+  );
   const setStoredLocale = useCallback((nextLocale: Locale) => {
     window.localStorage.setItem("sq-locale", nextLocale);
     document.documentElement.lang = nextLocale;
@@ -80,18 +112,22 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     };
   }, [setStoredLocale]);
 
-  const value = useMemo<I18nContextValue>(() => ({
-    locale,
-    setLocale(nextLocale) {
-      setStoredLocale(nextLocale);
-    },
-    t(key, variables = {}) {
-      return Object.entries(variables).reduce(
-        (message, [name, replacement]) => message.replaceAll(`{${name}}`, String(replacement)),
-        dictionaries[locale][key] ?? dictionaries.en[key],
-      );
-    },
-  }), [locale, setStoredLocale]);
+  const value = useMemo<I18nContextValue>(
+    () => ({
+      locale,
+      setLocale(nextLocale) {
+        setStoredLocale(nextLocale);
+      },
+      t(key, variables = {}) {
+        return Object.entries(variables).reduce(
+          (message, [name, replacement]) =>
+            message.replaceAll(`{${name}}`, String(replacement)),
+          dictionaries[locale][key] ?? dictionaries.en[key],
+        );
+      },
+    }),
+    [locale, setStoredLocale],
+  );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

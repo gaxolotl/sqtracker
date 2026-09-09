@@ -14,6 +14,13 @@ import {
   deleteAccount,
   getUserBookmarks,
 } from "../controllers/user.js";
+import {
+  deleteAvatar,
+  fetchOwnProfile,
+  updateOwnProfile,
+  uploadAvatar,
+} from "../controllers/profile.js";
+import { getRssToken, regenerateRssToken } from "../controllers/rss.js";
 
 const router = express.Router();
 
@@ -47,5 +54,11 @@ export default (tracker, mail) => {
   router.post("/totp/disable", limiter, disableTotp);
   router.post("/delete", limiter, deleteAccount);
   router.get("/bookmarks", limiter, getUserBookmarks(tracker));
+  router.get("/profile", limiter, fetchOwnProfile);
+  router.patch("/profile", limiter, updateOwnProfile);
+  router.post("/avatar", limiter, uploadAvatar);
+  router.delete("/avatar", limiter, deleteAvatar);
+  router.get("/rss-token", limiter, getRssToken);
+  router.post("/rss-token/regenerate", limiter, regenerateRssToken);
   return router;
 };

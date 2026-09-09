@@ -10,6 +10,7 @@ const configSchema = yup
       .object({
         SQ_SITE_NAME: yup.string().min(1).max(20).required(),
         SQ_SITE_DESCRIPTION: yup.string().min(1).max(80).required(),
+        SQ_SHOW_PAGE_IN_TITLE: yup.boolean(),
         SQ_ALLOW_REGISTER: yup
           .string()
           .oneOf(["open", "invite", "closed"])
@@ -33,8 +34,8 @@ const configSchema = yup
                 `Sources in category "${key}" must be unique`,
                 (value) =>
                   value.every(
-                    (source) => value.filter((c) => c === source).length === 1
-                  )
+                    (source) => value.filter((c) => c === source).length === 1,
+                  ),
               );
             return obj;
           }, {});
@@ -53,6 +54,9 @@ const configSchema = yup
         SQ_SITE_DEFAULT_LOCALE: yup
           .string()
           .oneOf(["en", "bg", "es", "it", "ru", "de", "zh", "eo", "fr"]),
+        SQ_AVATAR_MAX_RESOLUTION: yup.number().integer().min(64).max(2048),
+        SQ_AVATAR_MAX_SIZE_KB: yup.number().integer().min(32).max(5120),
+        SQ_ALLOW_GIF_AVATARS: yup.boolean(),
         SQ_BASE_URL: yup.string().matches(httpRegex).required(),
         SQ_API_URL: yup.string().matches(httpRegex).required(),
         SQ_ANNOUNCE_URL: yup.string().matches(httpRegex),
@@ -119,8 +123,8 @@ const validateConfig = async (config) => {
           value !== null && typeof value === "object"
             ? JSON.stringify(value)
             : String(value),
-        ]
-      )
+        ],
+      ),
     );
     process.env = {
       ...process.env,

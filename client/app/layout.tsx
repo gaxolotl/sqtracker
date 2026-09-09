@@ -6,10 +6,6 @@ import { ToastProvider } from "@/components/toast-context";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: {
-    default: "sqtracker demo",
-    template: "%s · sqtracker",
-  },
   description: "A focused, private torrent tracker.",
 };
 

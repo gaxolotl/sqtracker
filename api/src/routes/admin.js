@@ -5,6 +5,7 @@ import {
   refreshStats,
   listTorrentPeers,
 } from "../controllers/moderation.js";
+import { fetchSettings, updateSettings } from "../controllers/settings.js";
 
 const router = express.Router();
 
@@ -29,5 +30,7 @@ export default (tracker) => {
   router.get("/stats", limiter, getStats(tracker));
   router.post("/stats/refresh", limiter, refreshStats(tracker));
   router.get("/torrent/:infoHash/peers", limiter, listTorrentPeers(tracker));
+  router.get("/settings", limiter, fetchSettings);
+  router.put("/settings", limiter, updateSettings);
   return router;
 };

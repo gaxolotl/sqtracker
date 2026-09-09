@@ -11,7 +11,7 @@ import {
   SignInRequired,
 } from "@/components/ui";
 import { useApiData } from "@/hooks/use-api-data";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, ApiError } from "@/lib/api";
 import type { WikiResponse } from "@/lib/types";
 
 export function WikiEditor({
@@ -70,6 +70,14 @@ export function WikiEditor({
         router.push(`/wiki${createdSlug}`);
       }
     } catch (requestError) {
+      if (
+        creatingRoot &&
+        requestError instanceof ApiError &&
+        requestError.status === 409
+      ) {
+        router.replace(`/wiki/new?slug=${encodeURIComponent("/")}`);
+        return;
+      }
       setError(
         requestError instanceof Error
           ? requestError.message

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-context";
 import { useI18n } from "@/components/i18n-context";
 import { useTrackerConfig } from "@/hooks/use-tracker-config";
@@ -11,12 +11,16 @@ import { ActionMessage, Field } from "@/components/ui";
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, register } = useAuth();
+  const { login, register, session } = useAuth();
   const { t } = useI18n();
   const { config } = useTrackerConfig();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [totpRequired, setTotpRequired] = useState(false);
+
+  useEffect(() => {
+    if (session) router.replace("/");
+  }, [router, session]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,13 +44,18 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       }
       router.replace("/");
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : "Unable to authenticate.";
+      const message =
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to authenticate.";
       if (message.includes("One-time code required")) setTotpRequired(true);
       setError(message);
     } finally {
       setSubmitting(false);
     }
   }
+
+  if (session) return null;
 
   if (mode === "register" && config.allowRegister === "closed") {
     return (
@@ -66,18 +75,76 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     <main className="auth-page page">
       <section className="auth-card">
         <h1>{mode === "login" ? t("welcomeBack") : t("createAccount")}</h1>
-        <p className="auth-intro">{mode === "login" ? t("loginIntro") : t("registerIntro")}</p>
+        <p className="auth-intro">
+          {mode === "login" ? t("loginIntro") : t("registerIntro")}
+        </p>
         <form className="stack-form" onSubmit={submit}>
-          <Field label={t("username")}><input name="username" required autoComplete="username" /></Field>
-          {mode === "register" ? <Field label={t("email")}><input name="email" type="email" required autoComplete="email" /></Field> : null}
-          <Field label={t("password")}><input name="password" type="password" required autoComplete={mode === "login" ? "current-password" : "new-password"} /></Field>
-          {totpRequired ? <Field label={t("oneTimeCode")}><input name="totp" inputMode="numeric" autoComplete="one-time-code" required /></Field> : null}
-          {mode === "register" ? <Field label={t("inviteToken")} hint={config.allowRegister === "invite" ? t("inviteRequiredHint") : t("inviteHint")}><input name="invite" required={config.allowRegister === "invite"} defaultValue={searchParams.get("token") ?? ""} /></Field> : null}
+          <Field label={t("username")}>
+            <input name="username" required autoComplete="username" />
+          </Field>
+          {mode === "register" ? (
+            <Field label={t("email")}>
+              <input name="email" type="email" required autoComplete="email" />
+            </Field>
+          ) : null}
+          <Field label={t("password")}>
+            <input
+              name="password"
+              type="password"
+              required
+              autoComplete={
+                mode === "login" ? "current-password" : "new-password"
+              }
+            />
+          </Field>
+          {totpRequired ? (
+            <Field label={t("oneTimeCode")}>
+              <input
+                name="totp"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+              />
+            </Field>
+          ) : null}
+          {mode === "register" && config.allowRegister === "invite" ? (
+            <Field label={t("inviteToken")} hint={t("inviteRequiredHint")}>
+              <input
+                name="invite"
+                required
+                defaultValue={searchParams.get("token") ?? ""}
+              />
+            </Field>
+          ) : null}
           <ActionMessage error={error} />
-          <button className="primary-button full-button" type="submit" disabled={submitting}>{submitting ? t("pleaseWait") : mode === "login" ? t("login") : t("register")}</button>
+          <button
+            className="primary-button full-button"
+            type="submit"
+            disabled={submitting}
+          >
+            {submitting
+              ? t("pleaseWait")
+              : mode === "login"
+                ? t("login")
+                : t("register")}
+          </button>
         </form>
-        <p className="auth-switch">{mode === "login" ? <>{t("newHere")} <Link href="/register">{t("createAccount")}</Link></> : <>{t("alreadyAccount")} <Link href="/login">{t("login")}</Link></>}</p>
-        {mode === "login" ? <p className="auth-switch recovery-link"><Link href="/reset-password/initiate">{t("forgotPassword")}</Link></p> : null}
+        <p className="auth-switch">
+          {mode === "login" ? (
+            <>
+              {t("newHere")} <Link href="/register">{t("createAccount")}</Link>
+            </>
+          ) : (
+            <>
+              {t("alreadyAccount")} <Link href="/login">{t("login")}</Link>
+            </>
+          )}
+        </p>
+        {mode === "login" ? (
+          <p className="auth-switch recovery-link">
+            <Link href="/reset-password/initiate">{t("forgotPassword")}</Link>
+          </p>
+        ) : null}
       </section>
     </main>
   );

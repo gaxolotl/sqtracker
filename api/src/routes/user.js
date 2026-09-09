@@ -1,6 +1,11 @@
 import express from "express";
 import ratelimit from "express-rate-limit";
-import { banUser, fetchUser, unbanUser } from "../controllers/user.js";
+import {
+  banUser,
+  fetchUser,
+  setUserRole,
+  unbanUser,
+} from "../controllers/user.js";
 
 const router = express.Router();
 
@@ -22,8 +27,9 @@ const limiter = ratelimit({
 });
 
 export default (tracker) => {
-  router.get("/:username", limiter, fetchUser(tracker));
   router.post("/ban/:username", limiter, banUser);
   router.post("/unban/:username", limiter, unbanUser);
+  router.post("/role/:username", limiter, setUserRole);
+  router.get("/:username", limiter, fetchUser(tracker));
   return router;
 };

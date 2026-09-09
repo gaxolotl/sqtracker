@@ -11,6 +11,7 @@ import { getUserRatio } from "../utils/ratio.js";
 import { getUserHitNRuns } from "../utils/hitnrun.js";
 import { BYTES_GB } from "../tracker/announce.js";
 import { envFlag } from "../utils/env.js";
+import { isAdmin, VALID_ROLES } from "../utils/roles.js";
 
 export const sendVerificationEmail = async (mail, address, token) => {
   await mail.sendMail({
@@ -34,6 +35,7 @@ export const register = (mail) => async (req, res, next) => {
 
   if (req.body.username && req.body.email && req.body.password) {
     let invite;
+    let inviter;
 
     if (process.env.SQ_ALLOW_REGISTER === "invite") {
       if (!req.body.invite) {
@@ -52,6 +54,10 @@ export const register = (mail) => async (req, res, next) => {
         const { id } = decoded;
 
         invite = await Invite.findOne({ _id: id }).lean();
+        if (!invite) {
+          res.status(403).send("Invitation does not exist");
+          return;
+        }
         const { claimed, validUntil, invitingUser, email } = invite;
 
         if (claimed) {
@@ -71,7 +77,7 @@ export const register = (mail) => async (req, res, next) => {
           return;
         }
 
-        const inviter = User.findOne({ _id: invitingUser }).lean();
+        inviter = await User.findOne({ _id: invitingUser }).lean();
         if (!inviter || inviter.banned) {
           res
             .status(403)
@@ -87,6 +93,9 @@ export const register = (mail) => async (req, res, next) => {
 
     const normalizedUsername = req.body.username.toLowerCase();
     const created = Date.now();
+    let inviteClaimed = false;
+    let legacyInviteDebited = false;
+    let accountCreated = false;
 
     try {
       const user = await User.findOne({
@@ -102,7 +111,46 @@ export const register = (mail) => async (req, res, next) => {
         }
 
         const hash = await bcrypt.hash(req.body.password, 10);
-        const role = invite?.role || "user";
+        if (invite) {
+          const claimedInvite = await Invite.findOneAndUpdate(
+            { _id: invite._id, claimed: false },
+            { $set: { claimed: true } },
+            { new: true },
+          ).lean();
+          if (!claimedInvite) {
+            res.status(403).send("Invitation has already been claimed");
+            return;
+          }
+          inviteClaimed = true;
+
+          if (invite.reserved !== true) {
+            const debitedInviter = await User.findOneAndUpdate(
+              {
+                _id: invite.invitingUser,
+                remainingInvites: { $gte: 1 },
+              },
+              { $inc: { remainingInvites: -1 } },
+            ).lean();
+            if (!debitedInviter) {
+              await Invite.updateOne(
+                { _id: invite._id },
+                { $set: { claimed: false } },
+              );
+              inviteClaimed = false;
+              res.status(403).send("Inviting user has no remaining invites");
+              return;
+            }
+            legacyInviteDebited = true;
+          }
+        }
+
+        const requestedRole = VALID_ROLES.includes(invite?.role)
+          ? invite.role
+          : "user";
+        const role =
+          requestedRole !== "user" && inviter?.role !== "admin"
+            ? "user"
+            : requestedRole;
 
         const newUser = new User({
           username: normalizedUsername,
@@ -127,6 +175,7 @@ export const register = (mail) => async (req, res, next) => {
           .slice(0, 10);
 
         const createdUser = await newUser.save();
+        accountCreated = true;
 
         if (!envFlag("SQ_DISABLE_EMAIL")) {
           const emailVerificationValidUntil = created + 48 * 60 * 60 * 1000;
@@ -145,22 +194,6 @@ export const register = (mail) => async (req, res, next) => {
         }
 
         if (createdUser) {
-          if (req.body.invite) {
-            const decoded = jwt.verify(
-              req.body.invite,
-              process.env.SQ_JWT_SECRET,
-            );
-            const { id } = decoded;
-            await Invite.findOneAndUpdate(
-              { _id: id },
-              { $set: { claimed: true } },
-            );
-            await User.findOneAndUpdate(
-              { _id: invite.invitingUser },
-              { $inc: { remainingInvites: -1 } },
-            );
-          }
-
           res.send({
             token: jwt.sign(
               {
@@ -186,6 +219,18 @@ export const register = (mail) => async (req, res, next) => {
           );
       }
     } catch (e) {
+      if (inviteClaimed && !accountCreated) {
+        await Invite.updateOne(
+          { _id: invite._id },
+          { $set: { claimed: false } },
+        ).catch(() => {});
+        if (legacyInviteDebited) {
+          await User.updateOne(
+            { _id: invite.invitingUser },
+            { $inc: { remainingInvites: 1 } },
+          ).catch(() => {});
+        }
+      }
       next(e);
     }
   } else {
@@ -278,33 +323,52 @@ export const login = async (req, res, next) => {
   }
 };
 
-export const generateInvite = (mail) => async (req, res) => {
-  if (process.env.SQ_ALLOW_REGISTER !== "invite" && req.userRole !== "admin") {
+export const generateInvite = (mail) => async (req, res, next) => {
+  if (process.env.SQ_ALLOW_REGISTER !== "invite" && !isAdmin(req.userRole)) {
     res
       .status(403)
       .send("Can only send invites when tracker is in invite only mode");
     return;
   }
 
-  if (req.body.email && req.body.role) {
-    const user = await User.findOne({ _id: req.userId }).lean();
+  if (!req.body.email || !req.body.role) {
+    res.status(400).send("Request must include email, role");
+    return;
+  }
 
-    if (user.remainingInvites < 1) {
-      res.status(403).send("You do not have any remaining invites");
+  const requestedRole = req.body.role;
+  if (!VALID_ROLES.includes(requestedRole)) {
+    res.status(400).send("Role must be one of user, staff, admin");
+    return;
+  }
+
+  const admin = isAdmin(req.userRole);
+  let inviteReserved = false;
+  let inviteSaved = false;
+
+  try {
+    if (!admin) {
+      const reservingUser = await User.findOneAndUpdate(
+        { _id: req.userId, remainingInvites: { $gte: 1 } },
+        { $inc: { remainingInvites: -1 } },
+      ).lean();
+      if (!reservingUser) {
+        res.status(403).send("You do not have any remaining invites");
+        return;
+      }
+      inviteReserved = true;
     }
 
     const created = Date.now();
     const validUntil = created + 48 * 60 * 60 * 1000;
-
-    const { email, role } = req.body;
-
     const invite = new Invite({
       invitingUser: req.userId,
       created,
       validUntil,
       claimed: false,
-      email,
-      role: role || "user",
+      reserved: true,
+      email: req.body.email,
+      role: admin ? requestedRole : "user",
     });
 
     invite.token = jwt.sign(
@@ -313,22 +377,27 @@ export const generateInvite = (mail) => async (req, res) => {
     );
 
     const createdInvite = await invite.save();
+    inviteSaved = true;
 
-    if (createdInvite) {
-      if (!envFlag("SQ_DISABLE_EMAIL")) {
-        await mail.sendMail({
-          from: `"${process.env.SQ_SITE_NAME}" <${process.env.SQ_MAIL_FROM_ADDRESS}>`,
-          to: email,
-          subject: "Invite",
-          text: `You have been invited to join ${process.env.SQ_SITE_NAME}. Please follow the link below to register.
+    if (!envFlag("SQ_DISABLE_EMAIL")) {
+      await mail.sendMail({
+        from: `"${process.env.SQ_SITE_NAME}" <${process.env.SQ_MAIL_FROM_ADDRESS}>`,
+        to: req.body.email,
+        subject: "Invite",
+        text: `You have been invited to join ${process.env.SQ_SITE_NAME}. Please follow the link below to register.
         
 ${process.env.SQ_BASE_URL}/register?token=${createdInvite.token}`,
-        });
-      }
-      res.send(createdInvite);
+      });
     }
-  } else {
-    res.status(400).send("Request must include email, role");
+    res.send(createdInvite);
+  } catch (e) {
+    if (inviteReserved && !inviteSaved) {
+      await User.updateOne(
+        { _id: req.userId },
+        { $inc: { remainingInvites: 1 } },
+      ).catch(() => {});
+    }
+    next(e);
   }
 };
 
@@ -519,14 +588,22 @@ export const fetchUser = (tracker) => async (req, res, next) => {
           username: 1,
           created: 1,
           role: 1,
+          bio: 1,
+          location: 1,
+          website: 1,
+          avatarUpdated: 1,
           ...(req.userRole === "admin"
             ? { email: 1, emailVerified: 1, invitedBy: 1 }
             : {}),
-          remainingInvites: 1,
-          banned: 1,
-          banReason: 1,
-          bonusPoints: 1,
-          "totp.enabled": 1,
+          ...(req.userRole === "admin"
+            ? {
+                remainingInvites: 1,
+                banned: 1,
+                banReason: 1,
+                bonusPoints: 1,
+                "totp.enabled": 1,
+              }
+            : {}),
         },
       },
       {
@@ -957,6 +1034,42 @@ export const unbanUser = async (req, res, next) => {
       { $set: { banned: false } },
     );
 
+    res.sendStatus(200);
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const setUserRole = async (req, res, next) => {
+  try {
+    if (!isAdmin(req.userRole)) {
+      res.status(401).send("You do not have permission to change user roles");
+      return;
+    }
+
+    const role = typeof req.body.role === "string" ? req.body.role : "";
+    if (!VALID_ROLES.includes(role)) {
+      res.status(400).send("Role must be one of user, staff, admin");
+      return;
+    }
+
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) {
+      res.status(404).send("User does not exist");
+      return;
+    }
+
+    if (user.username === "admin" && role !== "admin") {
+      res.status(403).send("Primary admin account must remain an admin");
+      return;
+    }
+
+    if (user._id.toString() === req.userId.toString() && role !== "admin") {
+      res.status(403).send("You cannot remove your own admin role");
+      return;
+    }
+
+    await User.findOneAndUpdate({ _id: user._id }, { $set: { role } });
     res.sendStatus(200);
   } catch (e) {
     next(e);

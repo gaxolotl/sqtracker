@@ -9,6 +9,9 @@ module.exports = {
     // A short description of your tracker site. Maximum 80 characters.
     SQ_SITE_DESCRIPTION: "A short description for your tracker site",
 
+    // Whether browser tab titles include the localized current page name.
+    SQ_SHOW_PAGE_IN_TITLE: true,
+
     // A map of custom hex colours to use as the theme of your site.
     // If not specified, the default light and dark themes will be used.
     // If only "primary" is specified, the default light and dark themes will be used but with your main brand colour.
@@ -75,6 +78,11 @@ module.exports = {
 
     // Default site locale. See `client/locales/index.js` for available options.
     SQ_SITE_DEFAULT_LOCALE: "en",
+
+    // Profile images are always converted to WebP and compressed to fit these limits.
+    SQ_AVATAR_MAX_RESOLUTION: 512,
+    SQ_AVATAR_MAX_SIZE_KB: 512,
+    SQ_ALLOW_GIF_AVATARS: true,
 
     // The URL of your tracker site.
     // For local development, this should be `http://127.0.0.1:3000`.

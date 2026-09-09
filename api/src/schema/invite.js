@@ -8,6 +8,7 @@ const Invite = new mongoose.Schema({
   token: String,
   email: String,
   role: String,
+  reserved: Boolean,
 });
 
 export default mongoose.model("invite", Invite);

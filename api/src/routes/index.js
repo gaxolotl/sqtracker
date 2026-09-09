@@ -7,6 +7,8 @@ import adminRoutes from "./admin.js";
 import requestRoutes from "./request.js";
 import groupRoutes from "./group.js";
 import wikiRoutes from "./wiki.js";
+import forumRoutes from "./forum.js";
+import messageRoutes from "./messages.js";
 
 export {
   accountRoutes,
@@ -18,4 +20,6 @@ export {
   requestRoutes,
   groupRoutes,
   wikiRoutes,
+  forumRoutes,
+  messageRoutes,
 };

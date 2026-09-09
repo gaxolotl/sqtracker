@@ -14,7 +14,8 @@ export class ApiError extends Error {
 
 export function apiOrigin() {
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-  if (typeof window !== "undefined") return `${window.location.protocol}//${window.location.hostname}:3001`;
+  if (typeof window !== "undefined")
+    return `${window.location.protocol}//${window.location.hostname}:3001`;
   return "http://localhost:3001";
 }
 
@@ -30,7 +31,10 @@ export function getStoredSession(): AuthSession | null {
   }
 }
 
-export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  options: ApiOptions = {},
+): Promise<T> {
   const { auth = true, headers, ...requestOptions } = options;
   const session = getStoredSession();
   const requestHeaders = new Headers(headers);
@@ -38,7 +42,8 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   if (requestOptions.body && !(requestOptions.body instanceof FormData)) {
     requestHeaders.set("Content-Type", "application/json");
   }
-  if (auth && session?.token) requestHeaders.set("Authorization", `Bearer ${session.token}`);
+  if (auth && session?.token)
+    requestHeaders.set("Authorization", `Bearer ${session.token}`);
 
   const response = await fetch(`${apiOrigin()}${path}`, {
     ...requestOptions,
@@ -49,16 +54,22 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   });
 
   if (!response.ok) {
-    const message = (await response.text()) || `Request failed with status ${response.status}`;
+    const message =
+      (await response.text()) ||
+      `Request failed with status ${response.status}`;
     throw new ApiError(message, response.status);
   }
 
-  if (response.status === 204 || response.headers.get("content-length") === "0") {
+  if (
+    response.status === 204 ||
+    response.headers.get("content-length") === "0"
+  ) {
     return undefined as T;
   }
 
   const contentType = response.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) return response.json() as Promise<T>;
+  if (contentType.includes("application/json"))
+    return response.json() as Promise<T>;
   return (await response.text()) as T;
 }
 
@@ -70,12 +81,21 @@ export type AuthSession = {
   role: "admin" | "staff" | "user";
 };
 
+export function canModerate(role?: AuthSession["role"] | string) {
+  return role === "admin" || role === "staff";
+}
+
 export type AuthResponse = Omit<AuthSession, "role">;
 
 export function withRole(response: AuthResponse): AuthSession {
   try {
-    const encodedPayload = response.token.split(".")[1].replaceAll("-", "+").replaceAll("_", "/");
-    const payload = JSON.parse(atob(encodedPayload)) as { role?: AuthSession["role"] };
+    const encodedPayload = response.token
+      .split(".")[1]
+      .replaceAll("-", "+")
+      .replaceAll("_", "/");
+    const payload = JSON.parse(atob(encodedPayload)) as {
+      role?: AuthSession["role"];
+    };
     return { ...response, role: payload.role ?? "user" };
   } catch {
     return { ...response, role: "user" };

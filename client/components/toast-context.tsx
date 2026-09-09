@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, X } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -11,8 +11,11 @@ import {
   type ReactNode,
 } from "react";
 
-type ToastItem = { id: number; text: string };
-type ToastContextValue = { notify: (text: string) => void };
+type ToastVariant = "success" | "error";
+type ToastItem = { id: number; text: string; variant: ToastVariant };
+type ToastContextValue = {
+  notify: (text: string, variant?: ToastVariant) => void;
+};
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
@@ -25,19 +28,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const notify = useCallback(
-    (text: string) => {
+    (text: string, variant: ToastVariant = "success") => {
       const id = ++nextId.current;
       // The success effect can fire more than once per action (StrictMode
       // double-mounts effects in dev), so skip duplicates that are still on
       // screen instead of stacking the same toast.
       setToasts((current) =>
-        current.some((toast) => toast.text === text)
+        current.some(
+          (toast) => toast.text === text && toast.variant === variant,
+        )
           ? current
-          : [...current, { id, text }]
+          : [...current, { id, text, variant }],
       );
       window.setTimeout(() => dismiss(id), 3800);
     },
-    [dismiss]
+    [dismiss],
   );
 
   const value = useMemo(() => ({ notify }), [notify]);
@@ -47,8 +52,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="toast-stack" aria-live="polite">
         {toasts.map((toast) => (
-          <div className="toast toast-success" key={toast.id}>
-            <CheckCircle2 aria-hidden="true" />
+          <div
+            className={`toast toast-${toast.variant}`}
+            key={toast.id}
+            role={toast.variant === "error" ? "alert" : "status"}
+          >
+            {toast.variant === "error" ? (
+              <AlertCircle aria-hidden="true" />
+            ) : (
+              <CheckCircle2 aria-hidden="true" />
+            )}
             <span>{toast.text}</span>
             <button
               className="toast-dismiss"

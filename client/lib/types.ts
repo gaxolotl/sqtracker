@@ -1,6 +1,7 @@
 export type UserRef = {
   _id?: string;
   username: string;
+  avatarUpdated?: number;
 };
 
 export type CommentRecord = {
@@ -24,7 +25,12 @@ export type Torrent = {
   uploadedBy?: UserRef;
   anonymous?: boolean;
   size?: number;
-  files?: Array<{ name?: string | number[] | { type?: string; data?: number[] }; path?: string | number[] | { type?: string; data?: number[] }; length?: number; size?: number }>;
+  files?: Array<{
+    name?: string | number[] | { type?: string; data?: number[] };
+    path?: string | number[] | { type?: string; data?: number[] };
+    length?: number;
+    size?: number;
+  }>;
   created: number;
   downloads?: number;
   complete?: number;
@@ -61,6 +67,10 @@ export type UserProfile = {
   torrents?: Torrent[];
   comments?: CommentRecord[];
   totp?: { enabled?: boolean };
+  bio?: string;
+  location?: string;
+  website?: string;
+  avatarUpdated?: number;
 };
 
 export type Announcement = {
@@ -126,6 +136,7 @@ export type Invite = {
 export type TrackerConfig = {
   siteName: string;
   siteDescription: string;
+  showPageInTitle: boolean;
   allowRegister: "open" | "invite" | "closed";
   allowAnonymousUploads: boolean;
   categories: Record<string, string[]>;
@@ -133,6 +144,9 @@ export type TrackerConfig = {
   allowUnregisteredView: boolean;
   defaultLocale: string;
   customTheme?: Record<string, string>;
+  avatarMaxResolution: number;
+  avatarMaxSizeKb: number;
+  allowGifAvatars: boolean;
 };
 
 export type WikiPage = {
@@ -148,4 +162,101 @@ export type WikiPage = {
 export type WikiResponse = {
   page: WikiPage;
   allPages: Array<Pick<WikiPage, "slug" | "title">>;
+};
+
+export type ForumCategory = {
+  _id: string;
+  name: string;
+  description?: string;
+  sortOrder: number;
+  icon?: string;
+  created: number;
+  threadCount?: number;
+  postCount?: number;
+  latestThread?:
+    (Partial<ForumThread> & Pick<ForumThread, "_id" | "title">) | null;
+};
+
+export type ForumLastPost = {
+  userId?: string;
+  body: string;
+  created: number;
+  author?: UserRef | null;
+};
+
+export type ForumThread = {
+  _id: string;
+  category: ForumCategory | string;
+  title: string;
+  body?: string;
+  createdBy?: string;
+  author?: UserRef | null;
+  created: number;
+  updated: number;
+  pinned: boolean;
+  locked: boolean;
+  views: number;
+  postCount: number;
+  lastPost?: ForumLastPost;
+};
+
+export type ForumPost = {
+  _id: string;
+  thread: string;
+  userId?: string;
+  author?: UserRef | null;
+  body: string;
+  created: number;
+  edited?: number;
+};
+
+export type ForumThreadPage = {
+  category: ForumCategory;
+  total: number;
+  page: number;
+  pageSize: number;
+  threads: ForumThread[];
+};
+
+export type ForumPostPage = {
+  total: number;
+  page: number;
+  pageSize: number;
+  posts: ForumPost[];
+};
+
+export type DirectMessage = {
+  _id: string;
+  sender: UserRef | null;
+  body: string;
+  created: number;
+  readBy: string[];
+};
+
+export type Conversation = {
+  _id: string;
+  participants: UserRef[];
+  createdBy: string;
+  created: number;
+  subject?: string;
+  lastMessage?: {
+    userId?: UserRef;
+    body: string;
+    created: number;
+  } | null;
+  unreadCount?: number;
+};
+
+export type ConversationPage = {
+  total: number;
+  page: number;
+  pageSize: number;
+  conversations: Conversation[];
+};
+
+export type DirectMessagePage = {
+  total: number;
+  page: number;
+  pageSize: number;
+  messages: DirectMessage[];
 };

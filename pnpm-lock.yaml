@@ -90,6 +90,9 @@ importers:
       qs:
         specifier: ^6.16.0
         version: 6.16.0
+      sharp:
+        specifier: ^0.35.4
+        version: 0.35.4(@types/node@26.5.0)
       slugify:
         specifier: ^1.6.9
         version: 1.6.9
@@ -4685,8 +4688,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@img/colour@1.1.0':
-    optional: true
+  '@img/colour@1.1.0': {}
 
   '@img/sharp-darwin-arm64@0.35.4':
     optionalDependencies:
@@ -5664,8 +5666,7 @@ snapshots:
 
   destroy@1.2.0: {}
 
-  detect-libc@2.1.2:
-    optional: true
+  detect-libc@2.1.2: {}
 
   dijkstrajs@1.0.3: {}
 
@@ -7360,7 +7361,6 @@ snapshots:
       '@img/sharp-win32-ia32': 0.35.4
       '@img/sharp-win32-x64': 0.35.4
       '@types/node': 26.5.0
-    optional: true
 
   shebang-command@1.2.0:
     dependencies:

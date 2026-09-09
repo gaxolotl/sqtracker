@@ -23,6 +23,8 @@ import {
   requestRoutes,
   groupRoutes,
   wikiRoutes,
+  forumRoutes,
+  messageRoutes,
 } from "./routes/index.js";
 import {
   register,
@@ -42,6 +44,8 @@ import { getWiki } from "./controllers/wiki.js";
 import { rssFeed } from "./controllers/rss.js";
 import createAdminUser from "./setup/createAdminUser.js";
 import { envFlag } from "./utils/env.js";
+import { loadRuntimeSettings } from "./utils/runtimeSettings.js";
+import { serveAvatar } from "./controllers/profile.js";
 
 mongoose.set("strictQuery", true);
 
@@ -86,6 +90,7 @@ validateConfig(config).then(() => {
 
   mongoose.connection.once("open", async () => {
     console.log("[sq] connected to mongodb successfully");
+    await loadRuntimeSettings();
     await createAdminUser(mail);
   });
 
@@ -162,7 +167,7 @@ validateConfig(config).then(() => {
   app.get("/sq/*/announce", createTrackerRoute("announce", onTrackerRequest));
   app.get("/sq/*/scrape", createTrackerRoute("scrape", onTrackerRequest));
 
-  app.use(bodyParser.json({ limit: "5mb" }));
+  app.use(bodyParser.json({ limit: "15mb" }));
   app.use(cookieParser());
 
   app.get("/", (req, res) => {
@@ -185,6 +190,7 @@ validateConfig(config).then(() => {
     res.json({
       siteName: process.env.SQ_SITE_NAME,
       siteDescription: process.env.SQ_SITE_DESCRIPTION,
+      showPageInTitle: process.env.SQ_SHOW_PAGE_IN_TITLE !== "false",
       allowRegister: process.env.SQ_ALLOW_REGISTER,
       allowAnonymousUploads: process.env.SQ_ALLOW_ANONYMOUS_UPLOADS === "true",
       categories: parseJson(process.env.SQ_TORRENT_CATEGORIES, {}),
@@ -192,8 +198,12 @@ validateConfig(config).then(() => {
       allowUnregisteredView: process.env.SQ_ALLOW_UNREGISTERED_VIEW === "true",
       defaultLocale: process.env.SQ_SITE_DEFAULT_LOCALE || "en",
       customTheme: parseJson(process.env.SQ_CUSTOM_THEME, undefined),
+      avatarMaxResolution: Number(process.env.SQ_AVATAR_MAX_RESOLUTION || 512),
+      avatarMaxSizeKb: Number(process.env.SQ_AVATAR_MAX_SIZE_KB || 512),
+      allowGifAvatars: process.env.SQ_ALLOW_GIF_AVATARS !== "false",
     });
   });
+  app.get("/user/:username/avatar", serveAvatar);
 
   // auth routes
   app.post("/register", authLimiter, register(mail));
@@ -212,14 +222,22 @@ validateConfig(config).then(() => {
   // torrent file download (can download without auth, will not be able to announce)
   app.get("/torrent/download/:infoHash/:userId", downloadTorrent);
 
-  if (envFlag("SQ_ALLOW_UNREGISTERED_VIEW")) {
-    app.get("/torrent/info/:infoHash", fetchTorrent(tracker));
-    app.get("/torrent/latest", listLatest(tracker));
-    app.get("/torrent/search", searchTorrents(tracker));
-    app.get("/torrent/tags", listTags);
-    app.get("/wiki", getWiki);
-    app.get("/wiki/*", getWiki);
-  }
+  const whenPublicViewingEnabled = (handler) => (req, res, next) => {
+    if (!envFlag("SQ_ALLOW_UNREGISTERED_VIEW") || req.headers.authorization) {
+      next();
+      return;
+    }
+    handler(req, res, next);
+  };
+  app.get(
+    "/torrent/info/:infoHash",
+    whenPublicViewingEnabled(fetchTorrent(tracker)),
+  );
+  app.get("/torrent/latest", whenPublicViewingEnabled(listLatest(tracker)));
+  app.get("/torrent/search", whenPublicViewingEnabled(searchTorrents(tracker)));
+  app.get("/torrent/tags", whenPublicViewingEnabled(listTags));
+  app.get("/wiki", whenPublicViewingEnabled(getWiki));
+  app.get("/wiki/*", whenPublicViewingEnabled(getWiki));
 
   // everything from here on requires user auth
   app.use(auth);
@@ -233,6 +251,8 @@ validateConfig(config).then(() => {
   app.use("/requests", requestRoutes());
   app.use("/group", groupRoutes());
   app.use("/wiki", wikiRoutes());
+  app.use("/forum", forumRoutes());
+  app.use("/messages", messageRoutes());
 
   app.use((err, req, res, next) => {
     if (res.headersSent) {
