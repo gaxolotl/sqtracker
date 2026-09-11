@@ -24,6 +24,7 @@ import {
   getContentLimits,
   validateContentText,
 } from "../utils/contentLimits.js";
+import pluginEvents from "../plugins/eventBus.js";
 
 const getTorrentCategories = () =>
   JSON.parse(process.env.SQ_TORRENT_CATEGORIES || "{}");
@@ -686,6 +687,12 @@ export const deleteTorrent = async (req, res, next) => {
     }
 
     await Torrent.deleteOne({ infoHash: req.params.infoHash });
+
+    pluginEvents.emitDetached(
+      "torrent.deleted",
+      { torrentId: torrent._id.toString(), infoHash: torrent.infoHash },
+      { userId: req.userId.toString() },
+    );
 
     res.sendStatus(200);
   } catch (e) {

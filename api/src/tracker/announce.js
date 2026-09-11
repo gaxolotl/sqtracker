@@ -13,12 +13,9 @@ export const binaryToHex = (b) => Buffer.from(b, "binary").toString("hex");
 export const hexToBinary = (h) => Buffer.from(h, "hex").toString("binary");
 
 const handleAnnounce = async (req, res) => {
-  const userId = req.originalUrl.split("?")[0].split("/")[2];
-  req.userId = userId;
+  const announceUid = req.originalUrl.split("?")[0].split("/")[2];
 
-  console.log(`[DEBUG] userId: ${userId}`);
-
-  const user = await User.findOne({ uid: userId }).lean();
+  const user = await User.findOne({ uid: announceUid }).lean();
 
   // if the uid does not match a registered user, deny announce
   if (!user) {
@@ -43,9 +40,6 @@ const handleAnnounce = async (req, res) => {
 
   const infoHash = binaryToHex(params.info_hash);
 
-  console.log(`[DEBUG] query: ${JSON.stringify(params)}`);
-  console.log(`[DEBUG] infoHash: ${infoHash}`);
-
   const torrent = await Torrent.findOne({ infoHash }).lean();
 
   // if torrent info hash is not in the database, deny announce
@@ -60,9 +54,6 @@ const handleAnnounce = async (req, res) => {
 
   const { ratio } = await getUserRatio(user._id);
   const hitnruns = await getUserHitNRuns(user._id);
-
-  console.log(`[DEBUG] user ratio: ${ratio}`);
-  console.log(`[DEBUG] user hit'n'runs: ${hitnruns}`);
 
   // if users ratio is below the minimum threshold, and they are trying to download, deny announce
   if (
@@ -186,6 +177,8 @@ const handleAnnounce = async (req, res) => {
   if (params.event === "completed") {
     await Torrent.findOneAndUpdate({ infoHash }, { $inc: { downloads: 1 } });
   }
+
+  return { actor: { userId: user._id.toString() } };
 };
 
 export default handleAnnounce;

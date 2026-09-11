@@ -48,6 +48,8 @@ import { loadRuntimeSettings } from "./utils/runtimeSettings.js";
 import { serveAvatar } from "./controllers/profile.js";
 import { getTrackerBaseUrl } from "./utils/trackerUrl.js";
 import { getContentLimits } from "./utils/contentLimits.js";
+import { createPluginHost } from "./plugins/host.js";
+import pluginRegistry from "./plugins/registry.js";
 
 mongoose.set("strictQuery", true);
 
@@ -171,6 +173,8 @@ validateConfig(config)
       udp: false,
       ws: false,
     });
+    const pluginHost = createPluginHost({ registry: pluginRegistry, tracker });
+    await pluginHost.register();
     const onTrackerRequest = tracker._onRequest.bind(tracker);
     app.get("/announce/:uid", createTrackerRoute("announce", onTrackerRequest));
     app.get(
@@ -265,9 +269,15 @@ validateConfig(config)
     app.get("/torrent/tags", whenPublicViewingEnabled(listTags));
     app.get("/wiki", whenPublicViewingEnabled(getWiki));
     app.get("/wiki/*", whenPublicViewingEnabled(getWiki));
+    app.use("/plugins", pluginHost.publicRouter);
 
     // everything from here on requires user auth
     app.use(auth);
+
+    app.use("/plugins", pluginHost.userRouter);
+    app.use("/plugins", pluginHost.staffRouter);
+    app.use("/plugins", pluginHost.adminRouter);
+    app.use("/admin/plugins", pluginHost.managementRouter);
 
     app.use("/account", accountRoutes(tracker, mail));
     app.use("/user", userRoutes(tracker));
@@ -291,10 +301,32 @@ validateConfig(config)
     });
 
     await databaseReady;
+    await pluginHost.initialize();
+    await pluginHost.ready();
     const port = process.env.SQ_PORT || 3001;
-    app.listen(port, () => {
-      console.log(`[sq] ■ sqtracker running http://localhost:${port}`);
+    const server = await new Promise((resolve, reject) => {
+      const listener = app.listen(port, () => resolve(listener));
+      listener.once("error", reject);
     });
+    console.log(`[sq] ■ sqtracker running http://localhost:${port}`);
+
+    let stopping = false;
+    const stop = async () => {
+      if (stopping) return;
+      stopping = true;
+      try {
+        await new Promise((resolve, reject) => {
+          server.close((error) => (error ? reject(error) : resolve()));
+        });
+        await pluginHost.stop();
+        await mongoose.disconnect();
+      } catch (error) {
+        console.error("[sq] shutdown failed:", error);
+        process.exitCode = 1;
+      }
+    };
+    process.once("SIGINT", stop);
+    process.once("SIGTERM", stop);
   })
   .catch((error) => {
     console.error("[sq] startup failed:", error);

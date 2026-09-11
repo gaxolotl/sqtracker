@@ -1,11 +1,13 @@
 import parseHttpRequest from "bittorrent-tracker/lib/server/parse-http.js";
 import bencode from "bencode";
 import handleAnnounce from "./announce.js";
+import pluginEvents from "../plugins/eventBus.js";
 
 const createTrackerRoute = (action, onRequest) => async (req, res) => {
+  let announceContext;
   if (action === "announce") {
     try {
-      await handleAnnounce(req, res);
+      announceContext = await handleAnnounce(req, res);
     } catch (err) {
       console.error("[sq] error handling announce:", err.message);
       if (!res.writableEnded) {
@@ -42,15 +44,26 @@ const createTrackerRoute = (action, onRequest) => async (req, res) => {
   }
   onRequest(params, (err, response) => {
     let finalResponse = response;
-    delete finalResponse.action;
     if (err) {
       finalResponse = {
         "failure reason": err.message,
       };
     } else {
+      delete finalResponse.action;
       if (action === "announce") {
         finalResponse["interval"] = 30;
         finalResponse["min interval"] = 30;
+        pluginEvents.emitDetached(
+          "tracker.announce.accepted",
+          {
+            infoHash: params.info_hash,
+            event: params.event,
+            left: params.left,
+            seeders: Number(response.complete) || 0,
+            leechers: Number(response.incomplete) || 0,
+          },
+          announceContext?.actor ?? null,
+        );
       }
     }
     res.end(bencode.encode(finalResponse));
