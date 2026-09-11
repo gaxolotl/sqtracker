@@ -33,6 +33,12 @@ importers:
       '@sentry/tracing':
         specifier: ^7.120.4
         version: 7.120.4
+      '@sqtrackr/plugin-reseed-radar':
+        specifier: workspace:*
+        version: link:../plugins/reseed-radar
+      '@sqtrackr/plugin-sdk':
+        specifier: workspace:*
+        version: link:../packages/plugin-sdk
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -124,6 +130,12 @@ importers:
 
   client:
     dependencies:
+      '@sqtrackr/plugin-reseed-radar':
+        specifier: workspace:*
+        version: link:../plugins/reseed-radar
+      '@sqtrackr/plugin-sdk':
+        specifier: workspace:*
+        version: link:../packages/plugin-sdk
       lucide-react:
         specifier: 1.42.0
         version: 1.42.0(react@19.2.8)
@@ -155,6 +167,34 @@ importers:
       typescript:
         specifier: 6.0.3
         version: 6.0.3
+
+  packages/plugin-sdk:
+    devDependencies:
+      '@types/react':
+        specifier: 19.2.18
+        version: 19.2.18
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+
+  plugins/reseed-radar:
+    dependencies:
+      '@sqtrackr/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sdk
+      lucide-react:
+        specifier: 1.42.0
+        version: 1.42.0(react@19.2.8)
+    devDependencies:
+      '@types/react':
+        specifier: 19.2.18
+        version: 19.2.18
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
 
 packages:
 

@@ -8,7 +8,9 @@
   "license": "GPL-3.0-only",
   "workspaces": [
     "api",
-    "client"
+    "client",
+    "packages/*",
+    "plugins/*"
   ],
   "scripts": {
     "api:dev": "pnpm --filter @sqtracker/api dev",

@@ -1,0 +1,17 @@
+{
+  "name": "@sqtrackr/plugin-sdk",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./client": "./client.tsx",
+    "./server": "./server.js"
+  },
+  "peerDependencies": {
+    "react": "*"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "react": "19.2.8"
+  }
+}
