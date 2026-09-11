@@ -55,7 +55,10 @@ export const updateSettings = async (req, res, next) => {
     res.json(settings);
   } catch (error) {
     if (error.name === "ValidationError") {
-      res.status(400).send(error.errors.join("; "));
+      const message = Array.isArray(error.errors)
+        ? error.errors.join("; ")
+        : error.message;
+      res.status(400).json({ message });
       return;
     }
     next(error);

@@ -458,7 +458,8 @@ export const createForumThread = async (req, res, next) => {
   if (!body) return;
 
   try {
-    const category = await ForumCategory.findById(req.body.category).lean();
+    const categoryObjectId = new mongoose.Types.ObjectId(req.body.category);
+    const category = await ForumCategory.findById(categoryObjectId).lean();
     if (!category) {
       res.status(404).send("Category does not exist");
       return;

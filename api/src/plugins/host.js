@@ -1,4 +1,5 @@
 import express from "express";
+import ratelimit from "express-rate-limit";
 import mongoose from "mongoose";
 import PluginSettings from "../schema/pluginSettings.js";
 import Progress from "../schema/progress.js";
@@ -15,6 +16,14 @@ import { getSafeManifest, orderPluginRegistry } from "./validation.js";
 
 const ROUTE_PHASES = ["public", "user", "staff", "admin"];
 const LOCAL_MODEL_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,62}$/;
+
+const managementLimiter = ratelimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  keyGenerator: (req) => req.userId?.toString() ?? req.ip,
+  skip: (req) =>
+    process.env.NODE_ENV !== "production" || req.method === "OPTIONS",
+});
 
 const wrapHandler = (handler) => {
   if (typeof handler !== "function") return handler;
@@ -185,7 +194,7 @@ export const createPluginHost = ({
 
   const getState = (pluginId) => states.get(pluginId);
 
-  managementRouter.get("/", (req, res) => {
+  managementRouter.get("/", managementLimiter, (req, res) => {
     if (req.userRole !== "admin") {
       res.status(403).send("Only admins can view plugins");
       return;
@@ -197,7 +206,10 @@ export const createPluginHost = ({
     });
   });
 
-  managementRouter.put("/:pluginId/settings", async (req, res, next) => {
+  managementRouter.put(
+    "/:pluginId/settings",
+    managementLimiter,
+    async (req, res, next) => {
     if (req.userRole !== "admin") {
       res.status(403).send("Only admins can change plugin settings");
       return;
@@ -298,6 +310,7 @@ export const createPluginHost = ({
 
   managementRouter.put(
     "/:pluginId/enabled",
+    managementLimiter,
     requireAdminRole,
     async (req, res, next) => {
       const state = findManagedState(req, res);
@@ -325,6 +338,7 @@ export const createPluginHost = ({
 
   managementRouter.post(
     "/:pluginId/install",
+    managementLimiter,
     requireAdminRole,
     async (req, res, next) => {
       const state = findManagedState(req, res);
@@ -340,6 +354,7 @@ export const createPluginHost = ({
 
   managementRouter.delete(
     "/:pluginId",
+    managementLimiter,
     requireAdminRole,
     async (req, res, next) => {
       const state = findManagedState(req, res);
