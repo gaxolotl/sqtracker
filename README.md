@@ -1,8 +1,8 @@
-# ■ sqtrackr
-> continuing the legacy of sqtracker.
+![sqtrackr textmark?](https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/sqtracker_banner.png)
 
 ![Latest stable release](https://badgen.net/github/release/gaxolotl/sqtrackr/stable)
 [![License GPLv3](https://badgen.net/badge/license/GPLv3/blue)](./LICENSE)
+> continuing the legacy of sqtracker.
 
 sqtrackr is a modern private BitTorrent tracker platform.
 
