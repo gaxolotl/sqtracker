@@ -233,7 +233,7 @@ export const uploadTorrent = async (req, res, next) => {
           );
         } catch (error) {
           if (error instanceof TmdbError) {
-            res.status(error.status).send(error.message);
+            res.status(error.status).json({ message: error.message });
             return;
           }
           throw error;

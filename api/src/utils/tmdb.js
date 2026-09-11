@@ -143,7 +143,7 @@ export const parseReleaseName = (value, category = "") => {
     .trim();
 
   const seasonEpisodeMatch = normalized.match(
-    /\bS(\d{1,2})(?:\s*E\d{1,3}(?:\s*[- ]?\s*E\d{1,3})*)?/i,
+    /\bS(\d{1,2})(?:[ -]?E\d{1,3}(?:[ -]?E\d{1,3})*)?/i,
   );
   const alternateEpisodeMatch = normalized.match(/\b(\d{1,2})x(\d{1,3})\b/i);
   const naturalEpisodeMatch = normalized.match(
