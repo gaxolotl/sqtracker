@@ -1,47 +1,63 @@
 import slugify from "slugify";
 import Announcement from "../schema/announcement.js";
 import Comment from "../schema/comment.js";
+import {
+  getContentLimits,
+  validateContentText,
+} from "../utils/contentLimits.js";
 
 export const createAnnouncement = async (req, res, next) => {
-  if (req.body.title && req.body.body) {
-    try {
-      if (req.userRole !== "admin") {
-        res
-          .status(401)
-          .send("You do not have permission to create an announcement");
-        return;
-      }
-
-      const slug = slugify(req.body.title).toLowerCase();
-
-      const existing = await Announcement.findOne({ slug }).lean();
-
-      if (existing) {
-        res
-          .status(409)
-          .send(
-            "Announcement with this slug already exists. Please change the title."
-          );
-        return;
-      }
-
-      const announcement = new Announcement({
-        title: req.body.title,
-        slug,
-        body: req.body.body,
-        createdBy: req.userId,
-        pinned: !!req.body.pinned,
-        allowComments: !!req.body.allowComments,
-        created: Date.now(),
-      });
-
-      await announcement.save();
-      res.send(slug);
-    } catch (e) {
-      next(e);
+  try {
+    if (req.userRole !== "admin") {
+      res
+        .status(401)
+        .send("You do not have permission to create an announcement");
+      return;
     }
-  } else {
-    res.status(400).send("Request must include title and body");
+    const limits = getContentLimits();
+    const title = validateContentText(
+      req.body.title,
+      "Title",
+      limits.title,
+      res,
+    );
+    if (title === null) return;
+    const body = validateContentText(
+      req.body.body,
+      "Body",
+      limits.body,
+      res,
+      { trim: false },
+    );
+    if (body === null) return;
+
+    const slug = slugify(title).toLowerCase();
+
+    const existing = await Announcement.findOne({ slug }).lean();
+
+    if (existing) {
+      res
+        .status(409)
+        .send(
+          "Announcement with this slug already exists. Please change the title."
+        );
+      return;
+    }
+
+    const announcement = new Announcement({
+      title,
+      slug,
+      body,
+      createdBy: req.userId,
+      pinned: !!req.body.pinned,
+      allowComments: !!req.body.allowComments,
+      created: Date.now(),
+    });
+
+    await announcement.save();
+    res.send(slug);
+  } catch (e) {
+    next(e);
   }
 };
 
@@ -295,21 +311,36 @@ export const pinAnnouncement = async (req, res, next) => {
 };
 
 export const editAnnouncement = async (req, res, next) => {
-  if (req.body.title && req.body.body) {
-    try {
+  try {
       if (req.userRole !== "admin") {
         res
           .status(401)
           .send("You do not have permission to edit an announcement");
         return;
       }
+      const limits = getContentLimits();
+      const title = validateContentText(
+        req.body.title,
+        "Title",
+        limits.title,
+        res,
+      );
+      if (title === null) return;
+      const body = validateContentText(
+        req.body.body,
+        "Body",
+        limits.body,
+        res,
+        { trim: false },
+      );
+      if (body === null) return;
 
       const announcement = await Announcement.findOneAndUpdate(
         { _id: req.params.announcementId },
         {
           $set: {
-            title: req.body.title,
-            body: req.body.body,
+            title,
+            body,
             pinned: !!req.body.pinned,
             allowComments: !!req.body.allowComments,
             updated: Date.now(),
@@ -318,17 +349,21 @@ export const editAnnouncement = async (req, res, next) => {
       );
 
       res.send(announcement.slug);
-    } catch (e) {
-      next(e);
-    }
-  } else {
-    res.status(400).send("Request must include title and body");
+  } catch (e) {
+    next(e);
   }
 };
 
 export const addComment = async (req, res, next) => {
-  if (req.body.comment) {
-    try {
+  try {
+      const commentText = validateContentText(
+        req.body.comment,
+        "Comment",
+        getContentLimits().comment,
+        res,
+        { trim: false },
+      );
+      if (commentText === null) return;
       const announcement = await Announcement.findOne({
         _id: req.params.announcementId,
       }).lean();
@@ -347,16 +382,13 @@ export const addComment = async (req, res, next) => {
         type: "announcement",
         parentId: announcement._id,
         userId: req.userId,
-        comment: req.body.comment,
+        comment: commentText,
         created: Date.now(),
       });
       await comment.save();
 
       res.sendStatus(200);
-    } catch (e) {
-      next(e);
-    }
-  } else {
-    res.status(400).send("Request must include comment");
+  } catch (e) {
+    next(e);
   }
 };

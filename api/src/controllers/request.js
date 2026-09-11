@@ -3,18 +3,37 @@ import Request from "../schema/request.js";
 import Comment from "../schema/comment.js";
 import Torrent from "../schema/torrent.js";
 import User from "../schema/user.js";
+import {
+  getContentLimits,
+  validateContentText,
+} from "../utils/contentLimits.js";
 
 export const createRequest = async (req, res, next) => {
-  if (req.body.title && req.body.body) {
-    try {
+  try {
+      const limits = getContentLimits();
+      const title = validateContentText(
+        req.body.title,
+        "Title",
+        limits.title,
+        res,
+      );
+      if (title === null) return;
+      const body = validateContentText(
+        req.body.body,
+        "Body",
+        limits.body,
+        res,
+        { trim: false },
+      );
+      if (body === null) return;
       const existing = await Request.countDocuments();
 
       const index = existing + 1;
 
       const request = new Request({
         index,
-        title: req.body.title,
-        body: req.body.body,
+        title,
+        body,
         createdBy: req.userId,
         created: Date.now(),
         candidates: [],
@@ -22,11 +41,8 @@ export const createRequest = async (req, res, next) => {
 
       await request.save();
       res.send({ index });
-    } catch (e) {
-      next(e);
-    }
-  } else {
-    res.status(400).send("Request must include title and body");
+  } catch (e) {
+    next(e);
   }
 };
 
@@ -206,8 +222,15 @@ export const deleteRequest = async (req, res, next) => {
 };
 
 export const addComment = async (req, res, next) => {
-  if (req.body.comment) {
-    try {
+  try {
+      const commentText = validateContentText(
+        req.body.comment,
+        "Comment",
+        getContentLimits().comment,
+        res,
+        { trim: false },
+      );
+      if (commentText === null) return;
       const request = await Request.findOne({
         _id: req.params.requestId,
       }).lean();
@@ -221,17 +244,14 @@ export const addComment = async (req, res, next) => {
         type: "request",
         parentId: request._id,
         userId: req.userId,
-        comment: req.body.comment,
+        comment: commentText,
         created: Date.now(),
       });
       await comment.save();
 
       res.sendStatus(200);
-    } catch (e) {
-      next(e);
-    }
-  } else {
-    res.status(400).send("Request must include comment");
+  } catch (e) {
+    next(e);
   }
 };
 

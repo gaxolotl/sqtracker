@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Conversation from "../schema/conversation.js";
 import Message from "../schema/message.js";
 import User from "../schema/user.js";
+import { getContentLimits } from "../utils/contentLimits.js";
 
 const parsePage = (value) => Math.max(parseInt(value, 10) || 0, 0);
 
@@ -34,8 +35,11 @@ const validateBody = (body, res) => {
     res.status(400).send("Message body is required");
     return false;
   }
-  if (body.length > 50000) {
-    res.status(400).send("Message body cannot exceed 50000 characters");
+  const maxLength = getContentLimits().message;
+  if (body.length > maxLength) {
+    res
+      .status(400)
+      .send(`Message body cannot exceed ${maxLength} characters`);
     return false;
   }
   return true;
@@ -75,6 +79,10 @@ const normalizeUsernames = (participants, res) => {
   const usernames = participants.map((username) => username.trim());
   if (usernames.some((username) => !username)) {
     res.status(400).send("Participant usernames cannot be empty");
+    return null;
+  }
+  if (usernames.some((username) => username.length > 32)) {
+    res.status(400).send("Participant usernames cannot exceed 32 characters");
     return null;
   }
   return usernames;
@@ -242,8 +250,11 @@ export const createConversation = async (req, res, next) => {
     res.status(400).send("Subject must be a string");
     return;
   }
-  if (requestedSubject?.length > 120) {
-    res.status(400).send("Subject cannot exceed 120 characters");
+  const subjectLimit = Math.min(getContentLimits().title, 120);
+  if (requestedSubject?.length > subjectLimit) {
+    res
+      .status(400)
+      .send(`Subject cannot exceed ${subjectLimit} characters`);
     return;
   }
   const subject = requestedSubject?.trim();

@@ -12,6 +12,7 @@ import { getUserHitNRuns } from "../utils/hitnrun.js";
 import { BYTES_GB } from "../tracker/announce.js";
 import { envFlag } from "../utils/env.js";
 import { isAdmin, VALID_ROLES } from "../utils/roles.js";
+import { getContentLimits } from "../utils/contentLimits.js";
 
 export const sendVerificationEmail = async (mail, address, token) => {
   await mail.sendMail({
@@ -910,10 +911,19 @@ export const banUser = async (req, res, next) => {
 
     // Extract the optional reason from the request body
     // If it's empty, null, or undefined, fall back to "none"
-    const banReason =
-      req.body.reason && req.body.reason.trim() !== ""
-        ? req.body.reason.trim()
-        : "none";
+    if (
+      req.body.reason !== undefined &&
+      (typeof req.body.reason !== "string" ||
+        req.body.reason.length > getContentLimits().comment)
+    ) {
+      res
+        .status(400)
+        .send(
+          `Ban reason cannot exceed ${getContentLimits().comment} characters`,
+        );
+      return;
+    }
+    const banReason = req.body.reason?.trim() || "none";
 
     await User.findOneAndUpdate(
       { username: req.params.username },
