@@ -1,21 +1,14 @@
 import type { ReactNode } from "react";
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
 const inlinePattern =
   /(`[^`\n]+`)|(\*\*([^*\n]+)\*\*)|(\*([^*\n]+)\*)|(\[([^\]\n]+)\]\(([^)\s]+)\))/g;
 
 function renderInline(value: string, depth = 0): ReactNode[] {
   if (depth > 6) return [value];
   const nodes: ReactNode[] = [];
-  const source = escapeHtml(value);
+  // React escapes text nodes, so pre-escaping here would display entities such
+  // as &#39; literally instead of rendering the original apostrophe.
+  const source = value;
   let cursor = 0;
   let match: RegExpExecArray | null;
   let index = 0;
@@ -29,15 +22,30 @@ function renderInline(value: string, depth = 0): ReactNode[] {
     if (match[1]) {
       nodes.push(<code key={index}>{match[1].slice(1, -1)}</code>);
     } else if (match[2]) {
-      nodes.push(<strong key={index}>{renderInline(match[3], depth + 1)}</strong>);
+      nodes.push(
+        <strong key={index}>{renderInline(match[3], depth + 1)}</strong>,
+      );
     } else if (match[4]) {
       nodes.push(<em key={index}>{renderInline(match[5], depth + 1)}</em>);
     } else if (match[6]) {
       const label = match[7];
-      const href = match[8].replaceAll("&amp;", "&");
-      if (/^https?:\/\//i.test(href) || href.startsWith("/") || href.startsWith("#")) {
+      const href = match[8];
+      if (
+        /^https?:\/\//i.test(href) ||
+        href.startsWith("/") ||
+        href.startsWith("#")
+      ) {
         nodes.push(
-          <a href={href} key={index} target={href.startsWith("/") || href.startsWith("#") ? undefined : "_blank"} rel="noreferrer">
+          <a
+            href={href}
+            key={index}
+            target={
+              href.startsWith("/") || href.startsWith("#")
+                ? undefined
+                : "_blank"
+            }
+            rel="noreferrer"
+          >
             {label}
           </a>,
         );
@@ -77,6 +85,7 @@ export function Markdown({ text }: { text: string }) {
     if (line.trim().startsWith("```")) {
       flushParagraph();
       const language = line.trim().slice(3).trim();
+      const languageClass = language.replace(/[^a-z0-9_-]/gi, "");
       const code: string[] = [];
       i += 1;
       while (i < lines.length && !lines[i].trim().startsWith("```")) {
@@ -85,8 +94,10 @@ export function Markdown({ text }: { text: string }) {
       }
       blocks.push(
         <pre key={blockKey}>
-          <code className={language ? `language-${escapeHtml(language)}` : undefined}>
-            {code.map((codeLine) => escapeHtml(codeLine)).join("\n")}
+          <code
+            className={languageClass ? `language-${languageClass}` : undefined}
+          >
+            {code.join("\n")}
           </code>
         </pre>,
       );
@@ -121,7 +132,11 @@ export function Markdown({ text }: { text: string }) {
       flushParagraph();
       const items: ReactNode[] = [];
       while (i < lines.length && /^[-*]\s+/.test(lines[i])) {
-        items.push(<li key={items.length}>{renderInline(lines[i].replace(/^[-*]\s+/, ""))}</li>);
+        items.push(
+          <li key={items.length}>
+            {renderInline(lines[i].replace(/^[-*]\s+/, ""))}
+          </li>,
+        );
         i += 1;
       }
       blocks.push(<ul key={blockKey}>{items}</ul>);
@@ -134,7 +149,11 @@ export function Markdown({ text }: { text: string }) {
       flushParagraph();
       const items: ReactNode[] = [];
       while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
-        items.push(<li key={items.length}>{renderInline(lines[i].replace(/^\d+\.\s+/, ""))}</li>);
+        items.push(
+          <li key={items.length}>
+            {renderInline(lines[i].replace(/^\d+\.\s+/, ""))}
+          </li>,
+        );
         i += 1;
       }
       blocks.push(<ol key={blockKey}>{items}</ol>);
@@ -150,7 +169,9 @@ export function Markdown({ text }: { text: string }) {
         quote.push(lines[i].trim().replace(/^>\s?/, ""));
         i += 1;
       }
-      blocks.push(<blockquote key={blockKey}>{renderInline(quote.join(" "))}</blockquote>);
+      blocks.push(
+        <blockquote key={blockKey}>{renderInline(quote.join(" "))}</blockquote>,
+      );
       blockKey += 1;
       i -= 1;
       continue;

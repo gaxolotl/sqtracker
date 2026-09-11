@@ -13,6 +13,17 @@ import Group from "../schema/group.js";
 import { createGroup, addToGroup, removeFromGroup } from "./group.js";
 import { envFlag } from "../utils/env.js";
 import { countSwarmPeers } from "../tracker/swarm-stats.js";
+import { getAnnounceUrl } from "../utils/trackerUrl.js";
+import {
+  getTmdbMetadata,
+  parseReleaseName,
+  searchTmdb,
+  TmdbError,
+} from "../utils/tmdb.js";
+import {
+  getContentLimits,
+  validateContentText,
+} from "../utils/contentLimits.js";
 
 const getTorrentCategories = () =>
   JSON.parse(process.env.SQ_TORRENT_CATEGORIES || "{}");
@@ -41,6 +52,31 @@ const formatTag = (tag) =>
 const isValidInfoHash = (value) =>
   typeof value === "string" && /^[a-f0-9]{40}$/i.test(value);
 
+const decodeTorrentPayload = (payload, maxSizeKb, res) => {
+  if (typeof payload !== "string" || !payload) {
+    res.status(400).send("A .torrent file is required");
+    return null;
+  }
+
+  const maxBytes = maxSizeKb * 1024;
+  if (payload.length > Math.ceil(maxBytes / 3) * 4 + 4) {
+    res.status(413).send(`.torrent file cannot exceed ${maxSizeKb} KB`);
+    return null;
+  }
+
+  try {
+    const buffer = Buffer.from(payload, "base64");
+    if (buffer.length > maxBytes) {
+      res.status(413).send(`.torrent file cannot exceed ${maxSizeKb} KB`);
+      return null;
+    }
+    return { buffer, parsed: bencode.decode(buffer) };
+  } catch {
+    res.status(400).send("Could not read the .torrent file");
+    return null;
+  }
+};
+
 export const embellishTorrentsWithTrackerScrape = async (tracker, torrents) => {
   if (!torrents.length) return [];
 
@@ -60,11 +96,91 @@ export const embellishTorrentsWithTrackerScrape = async (tracker, torrents) => {
   }
 };
 
+export const identifyTorrent = async (req, res, next) => {
+  try {
+    const limits = getContentLimits();
+    let releaseName =
+      typeof req.body.query === "string" ? req.body.query.trim() : "";
+
+    if (releaseName.length > 200) {
+      res.status(400).send("Metadata search cannot exceed 200 characters");
+      return;
+    }
+
+    if (!releaseName && typeof req.body.torrent === "string") {
+      const decoded = decodeTorrentPayload(
+        req.body.torrent,
+        limits.torrentFileSizeKb,
+        res,
+      );
+      if (!decoded) return;
+      releaseName = bytesToString(decoded.parsed.info?.name ?? "");
+    }
+
+    if (!releaseName) {
+      res.status(400).send("A release name or .torrent file is required");
+      return;
+    }
+
+    const parsed = parseReleaseName(releaseName, req.body.type);
+    const matches = await searchTmdb(parsed);
+    res.json({ parsed, ...matches });
+  } catch (error) {
+    if (error instanceof TmdbError) {
+      res.status(error.status).json({ message: error.message });
+      return;
+    }
+    next(error);
+  }
+};
+
 export const uploadTorrent = async (req, res, next) => {
   if (req.body.torrent && req.body.name && req.body.description) {
     try {
-      const torrent = Buffer.from(req.body.torrent, "base64");
-      const parsed = bencode.decode(torrent);
+      const limits = getContentLimits();
+      const decoded = decodeTorrentPayload(
+        req.body.torrent,
+        limits.torrentFileSizeKb,
+        res,
+      );
+      if (!decoded) return;
+      const parsed = decoded.parsed;
+      const name = validateContentText(
+        req.body.name,
+        "Torrent name",
+        limits.torrentName,
+        res,
+      );
+      if (name === null) return;
+      const description = validateContentText(
+        req.body.description,
+        "Description",
+        limits.body,
+        res,
+        { trim: false },
+      );
+      if (description === null) return;
+      const mediaInfo = validateContentText(
+        req.body.mediaInfo,
+        "MediaInfo",
+        limits.mediaInfo,
+        res,
+        { required: false, trim: false },
+      );
+      if (mediaInfo === null) return;
+      const tagsInput = validateContentText(
+        req.body.tags,
+        "Tags",
+        limits.torrentTags,
+        res,
+        { required: false },
+      );
+      if (tagsInput === null) return;
+      const tags = tagsInput
+        .split(",")
+        .map((tag) => formatTag(tag).slice(0, 50))
+        .filter(Boolean)
+        .slice(0, 50);
 
       const categories = getTorrentCategories();
       if (Object.keys(categories).length && !req.body.type) {
@@ -96,8 +212,36 @@ export const uploadTorrent = async (req, res, next) => {
 
       const user = await User.findOne({ _id: req.userId }).lean();
 
+      let tmdb;
+      if (req.body.tmdb !== undefined) {
+        const selectedId = Number(req.body.tmdb?.id);
+        const selectedType = req.body.tmdb?.mediaType;
+        if (
+          !Number.isInteger(selectedId) ||
+          selectedId <= 0 ||
+          (selectedType !== "movie" && selectedType !== "tv")
+        ) {
+          res.status(400).send("Invalid TMDB selection");
+          return;
+        }
+
+        try {
+          tmdb = await getTmdbMetadata(
+            selectedType,
+            selectedId,
+            parseReleaseName(bytesToString(parsed.info.name), req.body.type),
+          );
+        } catch (error) {
+          if (error instanceof TmdbError) {
+            res.status(error.status).json({ message: error.message });
+            return;
+          }
+          throw error;
+        }
+      }
+
       parsed.info.private = 1;
-      parsed.announce = `${process.env.SQ_ANNOUNCE_URL || process.env.SQ_BASE_URL}/announce/${user.uid}`;
+      parsed.announce = getAnnounceUrl(user.uid);
       delete parsed["announce-list"];
 
       const infoHash = crypto
@@ -165,8 +309,8 @@ export const uploadTorrent = async (req, res, next) => {
       }
 
       const newTorrent = new Torrent({
-        name: req.body.name,
-        description: req.body.description,
+        name,
+        description,
         type: req.body.type,
         source: req.body.source,
         infoHash,
@@ -186,12 +330,10 @@ export const uploadTorrent = async (req, res, next) => {
         upvotes: [],
         downvotes: [],
         freeleech: false,
-        tags: (req.body.tags ?? "")
-          .split(",")
-          .map((t) => formatTag(t))
-          .filter(Boolean),
+        tags,
         group: groupId,
-        mediaInfo: req.body.mediaInfo,
+        mediaInfo: mediaInfo || undefined,
+        tmdb,
       });
       await newTorrent.save();
 
@@ -256,16 +398,45 @@ export const editTorrent = async (req, res, next) => {
         }
       }
 
-      const name = String(req.body.name);
+      const limits = getContentLimits();
+      const name = validateContentText(
+        req.body.name,
+        "Torrent name",
+        limits.torrentName,
+        res,
+      );
+      if (name === null) return;
       const type = String(req.body.type);
       const source = typeof req.body.source === "string" ? req.body.source : "";
-      const description = String(req.body.description);
-      const tags = String(req.body.tags ?? "")
+      const description = validateContentText(
+        req.body.description,
+        "Description",
+        limits.body,
+        res,
+        { trim: false },
+      );
+      if (description === null) return;
+      const tagsInput = validateContentText(
+        req.body.tags,
+        "Tags",
+        limits.torrentTags,
+        res,
+        { required: false },
+      );
+      if (tagsInput === null) return;
+      const tags = tagsInput
         .split(",")
-        .map((t) => formatTag(t))
-        .filter(Boolean);
-      const mediaInfo =
-        typeof req.body.mediaInfo === "string" ? req.body.mediaInfo : undefined;
+        .map((tag) => formatTag(tag).slice(0, 50))
+        .filter(Boolean)
+        .slice(0, 50);
+      const mediaInfo = validateContentText(
+        req.body.mediaInfo,
+        "MediaInfo",
+        limits.mediaInfo,
+        res,
+        { required: false, trim: false },
+      );
+      if (mediaInfo === null) return;
 
       const clone = { ...torrent, name };
       createNGrams(clone, ["name"]);
@@ -281,7 +452,7 @@ export const editTorrent = async (req, res, next) => {
             description,
             tags,
           },
-          mediaInfo,
+          mediaInfo: mediaInfo || undefined,
         },
       );
 
@@ -309,7 +480,7 @@ export const downloadTorrent = async (req, res, next) => {
     const { binary } = torrent;
     const parsed = bencode.decode(Buffer.from(binary, "base64"));
 
-    parsed.announce = `${process.env.SQ_ANNOUNCE_URL || process.env.SQ_BASE_URL}/announce/${user.uid}`;
+    parsed.announce = getAnnounceUrl(user.uid);
     delete parsed["announce-list"];
     parsed.info.private = 1;
 
@@ -362,6 +533,7 @@ export const fetchTorrent = (tracker) => async (req, res, next) => {
           tags: 1,
           group: 1,
           mediaInfo: 1,
+          tmdb: 1,
         },
       },
       {
@@ -521,6 +693,81 @@ export const deleteTorrent = async (req, res, next) => {
   }
 };
 
+const escapeRegex = (value) =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const getTorrentSearchStages = (query) => {
+  if (!query) {
+    return { hasTextQuery: false, textStages: [], mediaStages: [] };
+  }
+
+  const parsed = parseReleaseName(query);
+  const searchTitle = parsed.query.trim();
+  const queryNGrams = searchTitle
+    ? nGrams(searchTitle, false, 2, false).join(" ")
+    : "";
+  const textStages = queryNGrams
+    ? [
+        {
+          $match: {
+            $text: {
+              $search: queryNGrams,
+            },
+          },
+        },
+        {
+          $addFields: { confidenceScore: { $meta: "textScore" } },
+        },
+      ]
+    : [];
+  const season = parsed.season;
+  const episodes = parsed.episodes;
+  const mediaStages = [];
+
+  if (season !== undefined) {
+    const seasonNumber = escapeRegex(String(season));
+    const seasonPattern = new RegExp(
+      `(?:\\bs0*${seasonNumber}(?:[^0-9]|$)|\\bseason[ ._-]*0*${seasonNumber}(?:[^0-9]|$)|\\b0*${seasonNumber}x)`,
+      "i",
+    );
+
+    if (episodes.length) {
+      const episodePatterns = episodes.map((episode) => {
+        const episodeNumber = escapeRegex(String(episode));
+        return new RegExp(
+          `(?:\\bs0*${seasonNumber}[ ._-]*e0*${episodeNumber}(?:[^0-9]|$)|\\b0*${seasonNumber}x0*${episodeNumber}(?:[^0-9]|$)|\\bseason[ ._-]*0*${seasonNumber}[ ._-]*(?:episode|ep)[ ._-]*0*${episodeNumber}(?:[^0-9]|$))`,
+          "i",
+        );
+      });
+      mediaStages.push({
+        $match: {
+          $or: [
+            {
+              "tmdb.season": season,
+              "tmdb.episodes": { $all: episodes },
+            },
+            {
+              $and: episodePatterns.map((pattern) => ({ name: pattern })),
+            },
+          ],
+        },
+      });
+    } else {
+      mediaStages.push({
+        $match: {
+          $or: [{ "tmdb.season": season }, { name: seasonPattern }],
+        },
+      });
+    }
+  }
+
+  return {
+    hasTextQuery: Boolean(queryNGrams),
+    textStages,
+    mediaStages,
+  };
+};
+
 export const getTorrentsPage = async ({
   skip = 0,
   limit = 25,
@@ -534,31 +781,20 @@ export const getTorrentsPage = async ({
   sort,
   tracker,
 }) => {
-  const queryNGrams = nGrams(query, false, 2, false).join(" ");
+  const { hasTextQuery, textStages, mediaStages } =
+    getTorrentSearchStages(query);
 
   const [sortField, sortDirString] = sort?.split(":") ?? [];
   const sortDir = sortDirString === "asc" ? 1 : -1;
 
   const combinedSort = {};
   if (sortField) combinedSort[sortField] = sortDir;
-  if (query) combinedSort.confidenceScore = { $meta: "textScore" };
+  if (hasTextQuery) combinedSort.confidenceScore = { $meta: "textScore" };
   if (!combinedSort.created) combinedSort.created = -1;
 
   const torrents = await Torrent.aggregate([
-    ...(query
-      ? [
-          {
-            $match: {
-              $text: {
-                $search: queryNGrams,
-              },
-            },
-          },
-          {
-            $addFields: { confidenceScore: { $meta: "textScore" } },
-          },
-        ]
-      : []),
+    ...textStages,
+    ...mediaStages,
     {
       $project: {
         infoHash: 1,
@@ -571,6 +807,11 @@ export const getTorrentsPage = async ({
         created: 1,
         freeleech: 1,
         tags: 1,
+        "tmdb.title": 1,
+        "tmdb.mediaType": 1,
+        "tmdb.season": 1,
+        "tmdb.episodes": 1,
+        "tmdb.episodeTitle": 1,
         confidenceScore: 1,
       },
     },
@@ -677,17 +918,8 @@ export const getTorrentsPage = async ({
   ]);
 
   const [count] = await Torrent.aggregate([
-    ...(query
-      ? [
-          {
-            $match: {
-              $text: {
-                $search: queryNGrams,
-              },
-            },
-          },
-        ]
-      : []),
+    ...textStages,
+    ...mediaStages,
     ...(Array.isArray(ids)
       ? [
           {
@@ -722,11 +954,11 @@ export const getTorrentsPage = async ({
           },
         ]
       : []),
-    ...(userId
+    ...(uploadedBy
       ? [
           {
             $match: {
-              uploadedBy: userId,
+              uploadedBy,
             },
           },
         ]
@@ -773,7 +1005,7 @@ export const searchTorrents = (tracker) => async (req, res, next) => {
     const torrents = await getTorrentsPage({
       skip: page ? parseInt(page) * 25 : 0,
       limit: 25,
-      query: query ? decodeURIComponent(query) : undefined,
+      query: typeof query === "string" ? query.trim().slice(0, 200) : undefined,
       category,
       source,
       tag: tag ? decodeURIComponent(tag) : undefined,
@@ -787,9 +1019,56 @@ export const searchTorrents = (tracker) => async (req, res, next) => {
   }
 };
 
+export const suggestTorrents = async (req, res, next) => {
+  try {
+    const query =
+      typeof req.query.query === "string"
+        ? req.query.query.trim().slice(0, 200)
+        : "";
+    if (query.length < 2) {
+      res.status(400).send("Query must be at least 2 characters");
+      return;
+    }
+
+    const { hasTextQuery, textStages, mediaStages } =
+      getTorrentSearchStages(query);
+    const results = await Torrent.aggregate([
+      ...textStages,
+      {
+        $project: {
+          infoHash: 1,
+          name: 1,
+          type: 1,
+          tmdb: 1,
+          confidenceScore: 1,
+          created: 1,
+        },
+      },
+      ...mediaStages,
+      {
+        $sort: hasTextQuery
+          ? { confidenceScore: { $meta: "textScore" }, created: -1 }
+          : { created: -1 },
+      },
+      { $limit: 6 },
+    ]);
+
+    res.json({ results });
+  } catch (e) {
+    next(e);
+  }
+};
+
 export const addComment = async (req, res, next) => {
-  if (req.body.comment) {
-    try {
+  try {
+    const commentText = validateContentText(
+      req.body.comment,
+      "Comment",
+      getContentLimits().comment,
+      res,
+      { trim: false },
+    );
+    if (commentText === null) return;
       const { infoHash } = req.params;
 
       const torrent = await Torrent.findOne({ infoHash }).lean();
@@ -803,17 +1082,14 @@ export const addComment = async (req, res, next) => {
         type: "torrent",
         parentId: torrent._id,
         userId: req.userId,
-        comment: req.body.comment,
+        comment: commentText,
         created: Date.now(),
       });
       await comment.save();
 
       res.sendStatus(200);
-    } catch (e) {
-      next(e);
-    }
-  } else {
-    res.status(400).send("Request must include comment");
+  } catch (e) {
+    next(e);
   }
 };
 

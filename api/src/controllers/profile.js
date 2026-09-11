@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import User from "../schema/user.js";
+import { getContentLimits } from "../utils/contentLimits.js";
 
 const MAX_INPUT_BYTES = 10 * 1024 * 1024;
 const allowedInputTypes = new Set([
@@ -30,9 +31,10 @@ export const fetchOwnProfile = async (req, res, next) => {
 
 export const updateOwnProfile = async (req, res, next) => {
   try {
+    const limits = getContentLimits();
     const fields = [
-      ["bio", 500],
-      ["location", 80],
+      ["bio", limits.profileBio],
+      ["location", limits.profileLocation],
       ["website", 200],
     ];
     for (const [field, maxLength] of fields) {

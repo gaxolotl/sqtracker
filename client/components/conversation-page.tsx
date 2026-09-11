@@ -14,6 +14,7 @@ import {
   SignInRequired,
 } from "@/components/ui";
 import { useApiData } from "@/hooks/use-api-data";
+import { useTrackerConfig } from "@/hooks/use-tracker-config";
 import { apiFetch } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import type { Conversation, DirectMessagePage } from "@/lib/types";
@@ -25,6 +26,7 @@ export function ConversationPage({
   conversationId: string;
 }) {
   const { session } = useAuth();
+  const { config } = useTrackerConfig();
   const router = useRouter();
   const [page, setPage] = useState<number | "latest">("latest");
   const [actionError, setActionError] = useState("");
@@ -392,7 +394,7 @@ export function ConversationPage({
                   name="body"
                   rows={2}
                   required
-                  maxLength={50000}
+                  maxLength={Math.min(config.contentLimits.message, 50000)}
                   placeholder="Write a message…"
                 />
               </Field>

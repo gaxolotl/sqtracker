@@ -59,6 +59,7 @@ export function ForumSearchPage({ initialQuery }: { initialQuery: string }) {
           <input
             type="search"
             value={query}
+            maxLength={200}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search thread titles and messages"
             aria-label="Search forum"

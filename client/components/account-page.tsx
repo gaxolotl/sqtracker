@@ -251,7 +251,7 @@ export function AccountPage() {
                 <textarea
                   name="bio"
                   rows={5}
-                  maxLength={500}
+                  maxLength={Math.min(config.contentLimits.profileBio, 500)}
                   defaultValue={profile.data.bio ?? ""}
                   placeholder="Tell the community about yourself."
                 />
@@ -260,7 +260,10 @@ export function AccountPage() {
                 <Field label="Location">
                   <input
                     name="location"
-                    maxLength={80}
+                    maxLength={Math.min(
+                      config.contentLimits.profileLocation,
+                      80,
+                    )}
                     defaultValue={profile.data.location ?? ""}
                   />
                 </Field>
@@ -345,7 +348,7 @@ export function AccountPage() {
           }
         >
           <Field label="Email">
-            <input name="email" type="email" required />
+            <input name="email" type="email" maxLength={320} required />
           </Field>
           <Field label="Role">
             <select name="role" defaultValue="user">
@@ -407,7 +410,12 @@ export function AccountPage() {
             <code>{totp.secret}</code>
             <form className="inline-form" onSubmit={enableTotp}>
               <Field label="Authenticator code">
-                <input name="token" inputMode="numeric" required />
+                <input
+                  name="token"
+                  inputMode="numeric"
+                  maxLength={6}
+                  required
+                />
               </Field>
               <button className="primary-button" type="submit">
                 Enable 2FA
@@ -447,6 +455,7 @@ export function AccountPage() {
               name="password"
               type="password"
               autoComplete="current-password"
+              maxLength={128}
               required
             />
           </Field>
@@ -455,6 +464,7 @@ export function AccountPage() {
               name="newPassword"
               type="password"
               autoComplete="new-password"
+              maxLength={128}
               required
             />
           </Field>

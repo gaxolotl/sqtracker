@@ -4,7 +4,19 @@ import handleAnnounce from "./announce.js";
 
 const createTrackerRoute = (action, onRequest) => async (req, res) => {
   if (action === "announce") {
-    await handleAnnounce(req, res);
+    try {
+      await handleAnnounce(req, res);
+    } catch (err) {
+      console.error("[sq] error handling announce:", err.message);
+      if (!res.writableEnded) {
+        res.end(
+          bencode.encode({
+            "failure reason": "Announce failed: tracker error.",
+          }),
+        );
+      }
+      return;
+    }
     if (res.writableEnded) return;
   }
 
@@ -24,8 +36,9 @@ const createTrackerRoute = (action, onRequest) => async (req, res) => {
     res.end(
       bencode.encode({
         "failure reason": err.message,
-      })
+      }),
     );
+    return;
   }
   onRequest(params, (err, response) => {
     let finalResponse = response;

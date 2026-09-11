@@ -54,9 +54,21 @@ export async function apiFetch<T>(
   });
 
   if (!response.ok) {
-    const message =
-      (await response.text()) ||
-      `Request failed with status ${response.status}`;
+    const text = await response.text();
+    let message = text || `Request failed with status ${response.status}`;
+    if (
+      text &&
+      response.headers.get("content-type")?.includes("application/json")
+    ) {
+      try {
+        const parsed = JSON.parse(text) as { message?: unknown };
+        if (typeof parsed?.message === "string" && parsed.message) {
+          message = parsed.message;
+        }
+      } catch {
+        message = text;
+      }
+    }
     throw new ApiError(message, response.status);
   }
 

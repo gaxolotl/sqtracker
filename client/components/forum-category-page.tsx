@@ -23,12 +23,14 @@ import {
   SignInRequired,
 } from "@/components/ui";
 import { useApiData } from "@/hooks/use-api-data";
+import { useTrackerConfig } from "@/hooks/use-tracker-config";
 import { apiFetch } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import type { ForumThreadPage as ForumThreadPageData } from "@/lib/types";
 
 export function ForumCategoryPage({ categoryId }: { categoryId: string }) {
   const { session } = useAuth();
+  const { config } = useTrackerConfig();
   const router = useRouter();
   const [page, setPage] = useState(0);
   const [actionError, setActionError] = useState("");
@@ -122,13 +124,17 @@ export function ForumCategoryPage({ categoryId }: { categoryId: string }) {
             onSubmit={createThread}
           >
             <Field label="Title">
-              <input name="title" maxLength={200} required />
+              <input
+                name="title"
+                maxLength={Math.min(config.contentLimits.title, 200)}
+                required
+              />
             </Field>
             <Field label="Message" hint="Markdown is supported.">
               <textarea
                 name="body"
                 rows={6}
-                maxLength={50000}
+                maxLength={Math.min(config.contentLimits.body, 50000)}
                 required
                 placeholder="Share the details of your topic"
               />

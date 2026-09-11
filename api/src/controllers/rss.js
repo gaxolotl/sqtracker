@@ -3,6 +3,7 @@ import crypto from "crypto";
 import User from "../schema/user.js";
 import Torrent from "../schema/torrent.js";
 import { embellishTorrentsWithTrackerScrape } from "./torrent.js";
+import { getAnnounceUrl } from "../utils/trackerUrl.js";
 
 const escapeXml = (value) =>
   String(value ?? "")
@@ -28,7 +29,7 @@ const getTorrentXml = (torrent, userId) => {
         <trackers>
           <group order="ordered">
             <tracker seeds="${torrent.seeders}" peers="${torrent.seeders + torrent.leechers}">
-              ${escapeXml(process.env.SQ_ANNOUNCE_URL || process.env.SQ_BASE_URL)}/announce/${encodeURIComponent(userId)}
+              ${escapeXml(getAnnounceUrl(userId))}
             </tracker>
           </group>
         </trackers>

@@ -4,6 +4,7 @@ import ForumThread from "../schema/forumThread.js";
 import ForumPost from "../schema/forumPost.js";
 import User from "../schema/user.js";
 import { canModerate, isAdmin } from "../utils/roles.js";
+import { getContentLimits } from "../utils/contentLimits.js";
 
 const pageSize = 25;
 
@@ -244,7 +245,13 @@ export const createForumCategory = async (req, res, next) => {
     return;
   }
 
-  const name = validateText(req.body.name, "Category name", 100, res);
+  const limits = getContentLimits();
+  const name = validateText(
+    req.body.name,
+    "Category name",
+    Math.min(limits.title, 100),
+    res,
+  );
   if (!name) return;
 
   if (
@@ -254,8 +261,11 @@ export const createForumCategory = async (req, res, next) => {
     res.status(400).send("Description must be a string");
     return;
   }
-  if (req.body.description?.length > 1000) {
-    res.status(400).send("Description cannot exceed 1000 characters");
+  const descriptionLimit = Math.min(limits.body, 1000);
+  if (req.body.description?.length > descriptionLimit) {
+    res
+      .status(400)
+      .send(`Description cannot exceed ${descriptionLimit} characters`);
     return;
   }
   const sortOrder = req.body.sortOrder ?? 0;
@@ -301,10 +311,16 @@ export const editForumCategory = async (req, res, next) => {
 
   const { categoryId } = req.params;
   if (!validateId(categoryId, "category", res)) return;
+  const limits = getContentLimits();
 
   const update = {};
   if (req.body.name !== undefined) {
-    const name = validateText(req.body.name, "Category name", 100, res);
+    const name = validateText(
+      req.body.name,
+      "Category name",
+      Math.min(limits.title, 100),
+      res,
+    );
     if (!name) return;
     update.name = name;
   }
@@ -313,8 +329,11 @@ export const editForumCategory = async (req, res, next) => {
       res.status(400).send("Description must be a string");
       return;
     }
-    if (req.body.description.length > 1000) {
-      res.status(400).send("Description cannot exceed 1000 characters");
+    const descriptionLimit = Math.min(limits.body, 1000);
+    if (req.body.description.length > descriptionLimit) {
+      res
+        .status(400)
+        .send(`Description cannot exceed ${descriptionLimit} characters`);
       return;
     }
     update.description = req.body.description;
@@ -432,9 +451,10 @@ export const getCategoryThreads = async (req, res, next) => {
 
 export const createForumThread = async (req, res, next) => {
   if (!validateId(req.body.category, "category", res)) return;
-  const title = validateText(req.body.title, "Title", 200, res);
+  const limits = getContentLimits();
+  const title = validateText(req.body.title, "Title", limits.title, res);
   if (!title) return;
-  const body = validateBody(req.body.body, 50000, res);
+  const body = validateBody(req.body.body, limits.body, res);
   if (!body) return;
 
   try {
@@ -506,15 +526,16 @@ export const getForumThread = async (req, res, next) => {
 export const editForumThread = async (req, res, next) => {
   const { threadId } = req.params;
   if (!validateId(threadId, "thread", res)) return;
+  const limits = getContentLimits();
 
   const update = {};
   if (req.body.title !== undefined) {
-    const title = validateText(req.body.title, "Title", 200, res);
+    const title = validateText(req.body.title, "Title", limits.title, res);
     if (!title) return;
     update.title = title;
   }
   if (req.body.body !== undefined) {
-    const body = validateBody(req.body.body, 50000, res);
+    const body = validateBody(req.body.body, limits.body, res);
     if (!body) return;
     update.body = body;
   }
@@ -666,7 +687,7 @@ export const getForumThreadPosts = async (req, res, next) => {
 export const createForumPost = async (req, res, next) => {
   const { threadId } = req.params;
   if (!validateId(threadId, "thread", res)) return;
-  const body = validateBody(req.body.body, 50000, res);
+  const body = validateBody(req.body.body, getContentLimits().body, res);
   if (!body) return;
 
   try {
@@ -711,7 +732,7 @@ export const createForumPost = async (req, res, next) => {
 export const editForumPost = async (req, res, next) => {
   const { postId } = req.params;
   if (!validateId(postId, "post", res)) return;
-  const body = validateBody(req.body.body, 50000, res);
+  const body = validateBody(req.body.body, getContentLimits().body, res);
   if (!body) return;
 
   try {
@@ -792,6 +813,10 @@ export const searchForumThreads = async (req, res, next) => {
     req.query.query.trim().length === 0
   ) {
     res.status(400).send("Search query is required");
+    return;
+  }
+  if (req.query.query.length > 200) {
+    res.status(400).send("Search query cannot exceed 200 characters");
     return;
   }
 

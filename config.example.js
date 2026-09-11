@@ -12,6 +12,25 @@ module.exports = {
     // Whether browser tab titles include the localized current page name.
     SQ_SHOW_PAGE_IN_TITLE: true,
 
+    // Optionally center page content and control its maximum desktop width.
+    SQ_CONTENT_CENTERED: false,
+    SQ_CONTENT_MAX_WIDTH: 1040,
+
+    // Show matched movie and TV titles instead of full torrent release names.
+    SQ_SHORTEN_MATCHED_TORRENT_NAMES: true,
+
+    // Runtime limits for user-created content and uploaded .torrent metadata files.
+    SQ_TORRENT_NAME_MAX_LENGTH: 500,
+    SQ_CONTENT_TITLE_MAX_LENGTH: 200,
+    SQ_CONTENT_BODY_MAX_LENGTH: 50000,
+    SQ_COMMENT_MAX_LENGTH: 10000,
+    SQ_MESSAGE_MAX_LENGTH: 50000,
+    SQ_PROFILE_BIO_MAX_LENGTH: 500,
+    SQ_PROFILE_LOCATION_MAX_LENGTH: 80,
+    SQ_MEDIA_INFO_MAX_LENGTH: 100000,
+    SQ_TORRENT_TAGS_MAX_LENGTH: 500,
+    SQ_TORRENT_FILE_MAX_SIZE_KB: 1024,
+
     // A map of custom hex colours to use as the theme of your site.
     // If not specified, the default light and dark themes will be used.
     // If only "primary" is specified, the default light and dark themes will be used but with your main brand colour.
@@ -92,6 +111,12 @@ module.exports = {
     // For local development, this should be `http://127.0.0.1:3001`.
     SQ_API_URL: "https://sqtracker.dev/api",
 
+    // Optional public tracker address embedded in downloaded torrents and magnet links.
+    // Only needed when the tracker announce endpoint is not reachable at `SQ_API_URL`
+    // without its `/api` suffix. For local development, leave this unset so it is
+    // derived as `http://127.0.0.1:3001`.
+    // SQ_ANNOUNCE_URL: "https://tracker.sqtracker.dev",
+
     // The URL of your MongoDB server. Under the recommended setup, it should be `mongodb://sq_mongodb/sqtracker`.
     // For local development, this should be `mongodb://127.0.0.1/sqtracker`.
     SQ_MONGO_URL: "mongodb://sq_mongodb/sqtracker",
@@ -136,5 +161,12 @@ module.exports = {
     // The password to authenticate with your SMTP server with.
     // Not required if SQ_DISABLE_EMAIL=true.
     SQ_SMTP_PASS: "smtp_password",
+
+    // Optional TMDB API Read Access Token used for server-side movie and TV matching.
+    // Keep this secret. It is never sent to the browser.
+    SQ_TMDB_READ_TOKEN: "",
+
+    // Optional v3 API key fallback when an API Read Access Token is unavailable.
+    SQ_TMDB_API_KEY: "",
   },
 };

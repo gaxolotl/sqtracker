@@ -4,11 +4,13 @@ import Link from "next/link";
 import { MessageSquare } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { ActionMessage, Field } from "@/components/ui";
+import { useTrackerConfig } from "@/hooks/use-tracker-config";
 import { apiFetch } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import type { CommentRecord } from "@/lib/types";
 
 export function CommentThread({ comments = [], endpoint, disabled = false, onPosted }: { comments?: CommentRecord[]; endpoint: string; disabled?: boolean; onPosted?: () => void }) {
+  const { config } = useTrackerConfig();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -31,7 +33,7 @@ export function CommentThread({ comments = [], endpoint, disabled = false, onPos
     <section className="content-section comments-section">
       <h2 className="section-title">Comments</h2>
       <form className="comment-form" onSubmit={submit}>
-        <Field label="Post a comment"><textarea name="comment" rows={5} required disabled={disabled} placeholder={disabled ? "Comments are disabled." : "Write a comment…"} /></Field>
+        <Field label="Post a comment"><textarea name="comment" rows={5} required maxLength={config.contentLimits.comment} disabled={disabled} placeholder={disabled ? "Comments are disabled." : "Write a comment…"} /></Field>
         <ActionMessage error={error} />
         <div className="form-actions"><button className="primary-button" type="submit" disabled={disabled || submitting}>{submitting ? "Posting…" : "Post"}</button></div>
       </form>

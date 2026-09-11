@@ -52,6 +52,7 @@ export function HomeDashboard({ initialQuery = "" }: { initialQuery?: string }) 
           <input
             type="search"
             value={query}
+            maxLength={200}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("searchTracker")}
             aria-label={t("searchTracker")}

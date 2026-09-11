@@ -7,10 +7,21 @@ import Request from "../schema/request.js";
 import Comment from "../schema/comment.js";
 import { countSwarmPeers } from "../tracker/swarm-stats.js";
 import { canModerate } from "../utils/roles.js";
+import {
+  getContentLimits,
+  validateContentText,
+} from "../utils/contentLimits.js";
 
 export const createReport = async (req, res, next) => {
-  if (req.body.reason) {
-    try {
+  try {
+      const reason = validateContentText(
+        req.body.reason,
+        "Reason",
+        getContentLimits().comment,
+        res,
+        { trim: false },
+      );
+      if (reason === null) return;
       const torrent = await Torrent.findOne({
         infoHash: req.params.infoHash,
       }).lean();
@@ -23,18 +34,15 @@ export const createReport = async (req, res, next) => {
       const report = new Report({
         torrent: torrent._id,
         reportedBy: req.userId,
-        reason: req.body.reason,
+        reason,
         solved: false,
         created: Date.now(),
       });
 
       await report.save();
       res.sendStatus(200);
-    } catch (e) {
-      next(e);
-    }
-  } else {
-    res.status(400).send("Request must include reason");
+  } catch (e) {
+    next(e);
   }
 };
 

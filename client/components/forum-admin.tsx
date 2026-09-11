@@ -12,6 +12,7 @@ import {
   SignInRequired,
 } from "@/components/ui";
 import { useApiData } from "@/hooks/use-api-data";
+import { useTrackerConfig } from "@/hooks/use-tracker-config";
 import { ApiError, apiFetch } from "@/lib/api";
 import { FORUM_ICONS, forumIcon } from "@/lib/forum-icons";
 import type { ForumCategory } from "@/lib/types";
@@ -44,6 +45,7 @@ function IconPicker({
 
 export function ForumAdmin() {
   const { session } = useAuth();
+  const { config } = useTrackerConfig();
   const { data, error, loading, reload } = useApiData<ForumCategory[]>(
     session ? "/forum/categories" : null,
   );
@@ -212,10 +214,17 @@ export function ForumAdmin() {
             onSubmit={createCategory}
           >
             <Field label="Name">
-              <input name="name" maxLength={100} required />
+              <input
+                name="name"
+                maxLength={Math.min(config.contentLimits.title, 100)}
+                required
+              />
             </Field>
             <Field label="Description">
-              <input name="description" maxLength={1000} />
+              <input
+                name="description"
+                maxLength={Math.min(config.contentLimits.body, 1000)}
+              />
             </Field>
             <Field label="Sort order">
               <input name="sortOrder" type="number" defaultValue="0" required />
@@ -249,7 +258,7 @@ export function ForumAdmin() {
             <Field label="Name">
               <input
                 name="name"
-                maxLength={100}
+                maxLength={Math.min(config.contentLimits.title, 100)}
                 required
                 defaultValue={editingCategory.name}
               />
@@ -257,7 +266,7 @@ export function ForumAdmin() {
             <Field label="Description">
               <input
                 name="description"
-                maxLength={1000}
+                maxLength={Math.min(config.contentLimits.body, 1000)}
                 defaultValue={editingCategory.description ?? ""}
               />
             </Field>

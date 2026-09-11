@@ -1,8 +1,12 @@
 import slugify from "slugify";
 import Wiki from "../schema/wiki.js";
 import { envFlag } from "../utils/env.js";
+import {
+  getContentLimits,
+  validateContentText,
+} from "../utils/contentLimits.js";
 
-const slugRegex = /^\/([a-z0-9-_/])*/i;
+const slugRegex = /^\/[a-z0-9-_/]*$/i;
 
 const formatSlug = (slug) => {
   if (!slug.startsWith("/")) slug = `/${slug}`;
@@ -22,7 +26,31 @@ export const createWiki = async (req, res, next) => {
         return;
       }
 
-      let { slug } = req.body;
+      const limits = getContentLimits();
+      const slugInput = validateContentText(
+        req.body.slug,
+        "Path",
+        200,
+        res,
+      );
+      if (slugInput === null) return;
+      const title = validateContentText(
+        req.body.title,
+        "Title",
+        limits.title,
+        res,
+      );
+      if (title === null) return;
+      const body = validateContentText(
+        req.body.body,
+        "Body",
+        limits.body,
+        res,
+        { trim: false },
+      );
+      if (body === null) return;
+
+      let slug = slugInput;
       slug = formatSlug(slug);
 
       const validSlug = slugRegex.test(slug);
@@ -45,8 +73,8 @@ export const createWiki = async (req, res, next) => {
 
       const wiki = new Wiki({
         slug,
-        title: req.body.title,
-        body: req.body.body,
+        title,
+        body,
         createdBy: req.userId,
         public: !!req.body.public,
         created: Date.now(),
@@ -161,7 +189,31 @@ export const updateWiki = async (req, res, next) => {
         return;
       }
 
-      let { slug } = req.body;
+      const limits = getContentLimits();
+      const slugInput = validateContentText(
+        req.body.slug,
+        "Path",
+        200,
+        res,
+      );
+      if (slugInput === null) return;
+      const title = validateContentText(
+        req.body.title,
+        "Title",
+        limits.title,
+        res,
+      );
+      if (title === null) return;
+      const body = validateContentText(
+        req.body.body,
+        "Body",
+        limits.body,
+        res,
+        { trim: false },
+      );
+      if (body === null) return;
+
+      let slug = slugInput;
       slug = formatSlug(slug);
 
       const validSlug = slugRegex.test(slug);
@@ -189,8 +241,8 @@ export const updateWiki = async (req, res, next) => {
         {
           $set: {
             slug,
-            title: req.body.title,
-            body: req.body.body,
+            title,
+            body,
             public: !!req.body.public,
             updated: Date.now(),
           },

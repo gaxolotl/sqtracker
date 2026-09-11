@@ -11,6 +11,19 @@ const configSchema = yup
         SQ_SITE_NAME: yup.string().min(1).max(20).required(),
         SQ_SITE_DESCRIPTION: yup.string().min(1).max(80).required(),
         SQ_SHOW_PAGE_IN_TITLE: yup.boolean(),
+        SQ_CONTENT_CENTERED: yup.boolean(),
+        SQ_CONTENT_MAX_WIDTH: yup.number().integer().min(640).max(2560),
+        SQ_SHORTEN_MATCHED_TORRENT_NAMES: yup.boolean(),
+        SQ_TORRENT_NAME_MAX_LENGTH: yup.number().integer().min(20).max(1000),
+        SQ_CONTENT_TITLE_MAX_LENGTH: yup.number().integer().min(20).max(500),
+        SQ_CONTENT_BODY_MAX_LENGTH: yup.number().integer().min(500).max(200000),
+        SQ_COMMENT_MAX_LENGTH: yup.number().integer().min(100).max(50000),
+        SQ_MESSAGE_MAX_LENGTH: yup.number().integer().min(500).max(100000),
+        SQ_PROFILE_BIO_MAX_LENGTH: yup.number().integer().min(50).max(5000),
+        SQ_PROFILE_LOCATION_MAX_LENGTH: yup.number().integer().min(20).max(300),
+        SQ_MEDIA_INFO_MAX_LENGTH: yup.number().integer().min(1000).max(500000),
+        SQ_TORRENT_TAGS_MAX_LENGTH: yup.number().integer().min(50).max(5000),
+        SQ_TORRENT_FILE_MAX_SIZE_KB: yup.number().integer().min(64).max(10240),
         SQ_ALLOW_REGISTER: yup
           .string()
           .oneOf(["open", "invite", "closed"])
@@ -97,6 +110,20 @@ const configSchema = yup
         SQ_ADMIN_EMAIL: yup.string().email().required(),
         SQ_SMTP_USER: yup.string(),
         SQ_SMTP_PASS: yup.string(),
+        SQ_TMDB_READ_TOKEN: yup
+          .string()
+          .test(
+            "tmdb-token-length",
+            "SQ_TMDB_READ_TOKEN must be empty or at least 20 characters",
+            (value) => !value || value.trim().length >= 20,
+          ),
+        SQ_TMDB_API_KEY: yup
+          .string()
+          .test(
+            "tmdb-api-key",
+            "SQ_TMDB_API_KEY must be empty or a 32-character hexadecimal key",
+            (value) => !value || /^[a-f0-9]{32}$/i.test(value.trim()),
+          ),
       })
       .when("envs.SQ_DISABLE_EMAIL", {
         is: (val) => val !== true,

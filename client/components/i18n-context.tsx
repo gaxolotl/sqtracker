@@ -4,11 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useSyncExternalStore,
 } from "react";
-import { apiFetch } from "@/lib/api";
 import bg from "@/locales/bg.json";
 import de from "@/locales/de.json";
 import en from "@/locales/en.json";
@@ -76,41 +74,30 @@ function subscribe(callback: () => void) {
   };
 }
 
-function getSnapshot(): Locale {
-  const stored = window.localStorage.getItem("sq-locale") as Locale | null;
-  return stored && supportedLocales.includes(stored) ? stored : "en";
-}
-
-export function I18nProvider({ children }: { children: React.ReactNode }) {
+export function I18nProvider({
+  children,
+  defaultLocale = "en",
+}: {
+  children: React.ReactNode;
+  defaultLocale?: string;
+}) {
+  const initialLocale = supportedLocales.includes(defaultLocale as Locale)
+    ? (defaultLocale as Locale)
+    : "en";
+  const getSnapshot = useCallback(() => {
+    const stored = window.localStorage.getItem("sq-locale") as Locale | null;
+    return stored && supportedLocales.includes(stored) ? stored : initialLocale;
+  }, [initialLocale]);
   const locale = useSyncExternalStore<Locale>(
     subscribe,
     getSnapshot,
-    () => "en",
+    () => initialLocale,
   );
   const setStoredLocale = useCallback((nextLocale: Locale) => {
     window.localStorage.setItem("sq-locale", nextLocale);
     document.documentElement.lang = nextLocale;
     window.dispatchEvent(new Event("sq:locale"));
   }, []);
-
-  useEffect(() => {
-    if (window.localStorage.getItem("sq-locale")) return;
-    let active = true;
-    apiFetch<{ defaultLocale?: string }>("/config", { auth: false })
-      .then((config) => {
-        if (
-          active &&
-          !window.localStorage.getItem("sq-locale") &&
-          supportedLocales.includes(config.defaultLocale as Locale)
-        ) {
-          setStoredLocale(config.defaultLocale as Locale);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [setStoredLocale]);
 
   const value = useMemo<I18nContextValue>(
     () => ({
