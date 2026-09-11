@@ -14,6 +14,65 @@ export type CommentRecord = {
   request?: { title: string; index: number };
 };
 
+export type TmdbMediaType = "movie" | "tv";
+
+export type ParsedRelease = {
+  releaseName: string;
+  title: string;
+  query: string;
+  year?: number;
+  season?: number;
+  episodes: number[];
+  episodeTitle?: string;
+  mediaType?: TmdbMediaType;
+};
+
+export type TmdbCandidate = {
+  id: number;
+  mediaType: TmdbMediaType;
+  title: string;
+  originalTitle?: string;
+  date?: string;
+  year?: number;
+  overview?: string;
+  posterPath?: string;
+  backdropPath?: string;
+  rating: number;
+  voteCount: number;
+  popularity: number;
+  confidence: number;
+  episodeTitle?: string;
+  episodeMatch?: boolean;
+};
+
+export type TmdbIdentification = {
+  parsed: ParsedRelease;
+  candidates: TmdbCandidate[];
+  autoMatchId?: number;
+};
+
+export type TorrentMetadata = {
+  provider: "tmdb";
+  id: number;
+  mediaType: TmdbMediaType;
+  imdbId?: string;
+  title: string;
+  originalTitle?: string;
+  overview?: string;
+  releaseDate?: string;
+  year?: number;
+  posterPath?: string;
+  backdropPath?: string;
+  genres?: string[];
+  rating?: number;
+  voteCount?: number;
+  runtime?: number;
+  season?: number;
+  episodes?: number[];
+  episodeTitle?: string;
+  confidence?: number;
+};
+
 export type Torrent = {
   _id?: string;
   infoHash: string;
@@ -47,6 +106,7 @@ export type Torrent = {
   mediaInfo?: string;
   comments?: CommentRecord[] | { count: number };
   groupTorrents?: Torrent[];
+  tmdb?: TorrentMetadata;
 };
 
 export type UserProfile = {
@@ -133,10 +193,27 @@ export type Invite = {
   token: string;
 };
 
+export type ContentLimits = {
+  torrentName: number;
+  title: number;
+  body: number;
+  comment: number;
+  message: number;
+  profileBio: number;
+  profileLocation: number;
+  mediaInfo: number;
+  torrentTags: number;
+  torrentFileSizeKb: number;
+};
+
 export type TrackerConfig = {
   siteName: string;
   siteDescription: string;
   showPageInTitle: boolean;
+  contentCentered: boolean;
+  contentMaxWidth: number;
+  shortenMatchedTorrentNames: boolean;
+  contentLimits: ContentLimits;
   allowRegister: "open" | "invite" | "closed";
   allowAnonymousUploads: boolean;
   categories: Record<string, string[]>;
@@ -147,6 +224,7 @@ export type TrackerConfig = {
   avatarMaxResolution: number;
   avatarMaxSizeKb: number;
   allowGifAvatars: boolean;
+  trackerUrl: string;
 };
 
 export type WikiPage = {

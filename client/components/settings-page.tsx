@@ -10,13 +10,26 @@ import {
   SignInRequired,
 } from "@/components/ui";
 import { useApiData } from "@/hooks/use-api-data";
-import { refreshTrackerConfig } from "@/hooks/use-tracker-config";
+import { useTrackerConfig } from "@/hooks/use-tracker-config";
 import { apiFetch } from "@/lib/api";
 
 type AdminSettings = {
   SQ_SITE_NAME: string;
   SQ_SITE_DESCRIPTION: string;
   SQ_SHOW_PAGE_IN_TITLE: boolean;
+  SQ_CONTENT_CENTERED: boolean;
+  SQ_CONTENT_MAX_WIDTH: number;
+  SQ_SHORTEN_MATCHED_TORRENT_NAMES: boolean;
+  SQ_TORRENT_NAME_MAX_LENGTH: number;
+  SQ_CONTENT_TITLE_MAX_LENGTH: number;
+  SQ_CONTENT_BODY_MAX_LENGTH: number;
+  SQ_COMMENT_MAX_LENGTH: number;
+  SQ_MESSAGE_MAX_LENGTH: number;
+  SQ_PROFILE_BIO_MAX_LENGTH: number;
+  SQ_PROFILE_LOCATION_MAX_LENGTH: number;
+  SQ_MEDIA_INFO_MAX_LENGTH: number;
+  SQ_TORRENT_TAGS_MAX_LENGTH: number;
+  SQ_TORRENT_FILE_MAX_SIZE_KB: number;
   SQ_ALLOW_REGISTER: "open" | "invite" | "closed";
   SQ_ALLOW_ANONYMOUS_UPLOADS: boolean;
   SQ_MINIMUM_RATIO: number;
@@ -45,10 +58,40 @@ const numberFields = [
   "SQ_BP_COST_PER_GB",
   "SQ_AVATAR_MAX_RESOLUTION",
   "SQ_AVATAR_MAX_SIZE_KB",
+  "SQ_CONTENT_MAX_WIDTH",
+  "SQ_TORRENT_NAME_MAX_LENGTH",
+  "SQ_CONTENT_TITLE_MAX_LENGTH",
+  "SQ_CONTENT_BODY_MAX_LENGTH",
+  "SQ_COMMENT_MAX_LENGTH",
+  "SQ_MESSAGE_MAX_LENGTH",
+  "SQ_PROFILE_BIO_MAX_LENGTH",
+  "SQ_PROFILE_LOCATION_MAX_LENGTH",
+  "SQ_MEDIA_INFO_MAX_LENGTH",
+  "SQ_TORRENT_TAGS_MAX_LENGTH",
+  "SQ_TORRENT_FILE_MAX_SIZE_KB",
 ] as const;
+
+const contentLimitFields: Array<{
+  name: (typeof numberFields)[number];
+  label: string;
+  min: number;
+  max: number;
+}> = [
+  { name: "SQ_TORRENT_NAME_MAX_LENGTH", label: "Torrent name characters", min: 20, max: 1000 },
+  { name: "SQ_CONTENT_TITLE_MAX_LENGTH", label: "Title characters", min: 20, max: 500 },
+  { name: "SQ_CONTENT_BODY_MAX_LENGTH", label: "Long-form body characters", min: 500, max: 200000 },
+  { name: "SQ_COMMENT_MAX_LENGTH", label: "Comment and report characters", min: 100, max: 50000 },
+  { name: "SQ_MESSAGE_MAX_LENGTH", label: "Private message characters", min: 500, max: 100000 },
+  { name: "SQ_PROFILE_BIO_MAX_LENGTH", label: "Profile bio characters", min: 50, max: 5000 },
+  { name: "SQ_PROFILE_LOCATION_MAX_LENGTH", label: "Profile location characters", min: 20, max: 300 },
+  { name: "SQ_MEDIA_INFO_MAX_LENGTH", label: "MediaInfo characters", min: 1000, max: 500000 },
+  { name: "SQ_TORRENT_TAGS_MAX_LENGTH", label: "Torrent tag input characters", min: 50, max: 5000 },
+  { name: "SQ_TORRENT_FILE_MAX_SIZE_KB", label: ".torrent file size (KB)", min: 64, max: 10240 },
+];
 
 export function SettingsPage() {
   const { session } = useAuth();
+  const { updateConfig } = useTrackerConfig();
   const settings = useApiData<AdminSettings>(
     session?.role === "admin" ? "/admin/settings" : null,
   );
@@ -101,17 +144,50 @@ export function SettingsPage() {
         SQ_CUSTOM_THEME: customTheme,
         SQ_ALLOW_ANONYMOUS_UPLOADS: form.has("SQ_ALLOW_ANONYMOUS_UPLOADS"),
         SQ_SHOW_PAGE_IN_TITLE: form.has("SQ_SHOW_PAGE_IN_TITLE"),
+        SQ_CONTENT_CENTERED: form.has("SQ_CONTENT_CENTERED"),
+        SQ_SHORTEN_MATCHED_TORRENT_NAMES: form.has(
+          "SQ_SHORTEN_MATCHED_TORRENT_NAMES",
+        ),
         SQ_SITE_WIDE_FREELEECH: form.has("SQ_SITE_WIDE_FREELEECH"),
         SQ_ALLOW_UNREGISTERED_VIEW: form.has("SQ_ALLOW_UNREGISTERED_VIEW"),
         SQ_ALLOW_GIF_AVATARS: form.has("SQ_ALLOW_GIF_AVATARS"),
       };
       for (const key of numberFields) next[key] = Number(form.get(key));
-      await apiFetch("/admin/settings", {
+      const saved = await apiFetch<AdminSettings>("/admin/settings", {
         method: "PUT",
         body: JSON.stringify(next),
       });
-      refreshTrackerConfig();
-      settings.reload();
+      settings.setData(saved);
+      updateConfig({
+        siteName: saved.SQ_SITE_NAME,
+        siteDescription: saved.SQ_SITE_DESCRIPTION,
+        showPageInTitle: saved.SQ_SHOW_PAGE_IN_TITLE,
+        contentCentered: saved.SQ_CONTENT_CENTERED,
+        contentMaxWidth: saved.SQ_CONTENT_MAX_WIDTH,
+        shortenMatchedTorrentNames: saved.SQ_SHORTEN_MATCHED_TORRENT_NAMES,
+        contentLimits: {
+          torrentName: saved.SQ_TORRENT_NAME_MAX_LENGTH,
+          title: saved.SQ_CONTENT_TITLE_MAX_LENGTH,
+          body: saved.SQ_CONTENT_BODY_MAX_LENGTH,
+          comment: saved.SQ_COMMENT_MAX_LENGTH,
+          message: saved.SQ_MESSAGE_MAX_LENGTH,
+          profileBio: saved.SQ_PROFILE_BIO_MAX_LENGTH,
+          profileLocation: saved.SQ_PROFILE_LOCATION_MAX_LENGTH,
+          mediaInfo: saved.SQ_MEDIA_INFO_MAX_LENGTH,
+          torrentTags: saved.SQ_TORRENT_TAGS_MAX_LENGTH,
+          torrentFileSizeKb: saved.SQ_TORRENT_FILE_MAX_SIZE_KB,
+        },
+        allowRegister: saved.SQ_ALLOW_REGISTER,
+        allowAnonymousUploads: saved.SQ_ALLOW_ANONYMOUS_UPLOADS,
+        categories: saved.SQ_TORRENT_CATEGORIES,
+        siteWideFreeleech: saved.SQ_SITE_WIDE_FREELEECH,
+        allowUnregisteredView: saved.SQ_ALLOW_UNREGISTERED_VIEW,
+        defaultLocale: saved.SQ_SITE_DEFAULT_LOCALE,
+        customTheme: saved.SQ_CUSTOM_THEME,
+        avatarMaxResolution: saved.SQ_AVATAR_MAX_RESOLUTION,
+        avatarMaxSizeKb: saved.SQ_AVATAR_MAX_SIZE_KB,
+        allowGifAvatars: saved.SQ_ALLOW_GIF_AVATARS,
+      });
       setMessage("Site settings saved and applied.");
     } catch (requestError) {
       setError(
@@ -194,6 +270,69 @@ export function SettingsPage() {
                   />
                   Show the localized page name in browser tabs
                 </label>
+              </div>
+            </section>
+
+            <section className="account-section">
+              <h2>Content layout</h2>
+              <p>Control the alignment and desktop width of page content.</p>
+              <div className="settings-grid">
+                <Field
+                  label="Maximum content width (px)"
+                  hint="Applies to page headers, tables, forms, forums, and detail cards."
+                >
+                  <input
+                    name="SQ_CONTENT_MAX_WIDTH"
+                    type="number"
+                    min="640"
+                    max="2560"
+                    step="10"
+                    defaultValue={settings.data.SQ_CONTENT_MAX_WIDTH}
+                    required
+                  />
+                </Field>
+              </div>
+              <div className="settings-checks">
+                <label>
+                  <input
+                    name="SQ_CONTENT_CENTERED"
+                    type="checkbox"
+                    defaultChecked={settings.data.SQ_CONTENT_CENTERED}
+                  />{" "}
+                  Center page content
+                </label>
+                <label>
+                  <input
+                    name="SQ_SHORTEN_MATCHED_TORRENT_NAMES"
+                    type="checkbox"
+                    defaultChecked={
+                      settings.data.SQ_SHORTEN_MATCHED_TORRENT_NAMES
+                    }
+                  />{" "}
+                  Shorten matched torrent names to movie and TV titles
+                </label>
+              </div>
+            </section>
+
+            <section className="account-section">
+              <h2>Content limits</h2>
+              <p>
+                Maximum lengths are enforced in both the browser and API.
+                Security identifiers and search queries keep fixed limits.
+              </p>
+              <div className="settings-grid">
+                {contentLimitFields.map((field) => (
+                  <Field label={field.label} key={field.name}>
+                    <input
+                      name={field.name}
+                      type="number"
+                      min={field.min}
+                      max={field.max}
+                      defaultValue={settings.data![field.name]}
+                      required
+                    />
+                  </Field>
+                ))}
               </div>
             </section>
 

@@ -8,17 +8,21 @@ import { useI18n } from "@/components/i18n-context";
 
 export function PageHeader({
   title,
+  titleTooltip,
   info,
   actions,
 }: {
   title: string;
+  titleTooltip?: string;
   info?: string;
   actions?: React.ReactNode;
 }) {
   return (
     <header className="page-header">
-      <div className="page-title-row">
-        <h1>{title}</h1>
+      <div
+        className={`page-title-row${title.length > 56 ? " long-title" : ""}`}
+      >
+        <h1 title={titleTooltip ?? title}>{title}</h1>
         {info ? (
           <span className="info-tooltip" tabIndex={0} aria-label={info}>
             <CircleHelp aria-hidden="true" />

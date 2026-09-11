@@ -130,12 +130,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       "--border": theme.border,
       "--text": theme.text,
       "--muted": theme.grey,
+      "--content-max-width": `${Math.min(
+        2560,
+        Math.max(640, config.contentMaxWidth),
+      )}px`,
     };
     for (const [property, value] of Object.entries(variables)) {
       if (value) root.style.setProperty(property, value);
       else root.style.removeProperty(property);
     }
-  }, [config.customTheme]);
+  }, [config.customTheme, config.contentMaxWidth]);
 
   function toggleTheme() {
     const nextTheme =
@@ -282,7 +286,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           />
         )}
 
-        <div className="app-content">
+        <div
+          className={`app-content${config.contentCentered ? " content-centered" : ""}`}
+        >
           <header className="topbar">
             <button
               className="menu-button"
@@ -298,6 +304,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <input
                   name="query"
                   type="search"
+                  maxLength={200}
                   aria-label={t("searchTracker")}
                   placeholder={t("search")}
                 />
