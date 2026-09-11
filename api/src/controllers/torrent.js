@@ -127,7 +127,7 @@ export const identifyTorrent = async (req, res, next) => {
     res.json({ parsed, ...matches });
   } catch (error) {
     if (error instanceof TmdbError) {
-      res.status(error.status).send(error.message);
+      res.status(error.status).json({ message: error.message });
       return;
     }
     next(error);
