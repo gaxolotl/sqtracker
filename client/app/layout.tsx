@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { AppShell } from "@/components/app-shell";
 import { AuthProvider } from "@/components/auth-context";
 import { I18nProvider } from "@/components/i18n-context";
+import { PluginHostProvider } from "@/components/plugin-host";
 import { ToastProvider } from "@/components/toast-context";
 import { TrackerConfigProvider } from "@/hooks/use-tracker-config";
 import {
@@ -79,7 +80,9 @@ export default async function RootLayout({
           <AuthProvider>
             <I18nProvider defaultLocale={config.defaultLocale}>
               <ToastProvider>
-                <AppShell>{children}</AppShell>
+                <PluginHostProvider>
+                  <AppShell>{children}</AppShell>
+                </PluginHostProvider>
               </ToastProvider>
             </I18nProvider>
           </AuthProvider>

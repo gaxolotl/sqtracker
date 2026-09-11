@@ -19,6 +19,7 @@ import {
 import { FormEvent, useState } from "react";
 import { useAuth } from "@/components/auth-context";
 import { CommentThread } from "@/components/comment-thread";
+import { PluginSlot } from "@/components/plugin-host";
 import {
   ActionMessage,
   ApiState,
@@ -182,6 +183,19 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
   const hasDistinctDescription =
     Boolean(description) && description !== data?.tmdb?.overview?.trim();
   const tags = data?.tags?.filter(Boolean) ?? [];
+  const pluginContext = data
+    ? {
+        torrent: {
+          _id: data._id,
+          infoHash: data.infoHash,
+          name: data.name,
+          seeders: data.seeders ?? data.complete,
+          created: data.created,
+        },
+        session: { id: session.id, role: session.role },
+        reload,
+      }
+    : null;
 
   return (
     <main className="page detail-page">
@@ -343,6 +357,10 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
                 <TorrentPeers infoHash={data.infoHash} />
               ) : null}
             </section>
+            <PluginSlot
+              name="torrent.afterDetails"
+              context={pluginContext}
+            />
 
             {hasDistinctDescription || tags.length ? (
               <section className="copy-section">
@@ -437,6 +455,7 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
                   <Trash2 aria-hidden="true" /> Delete
                 </button>
               ) : null}
+              <PluginSlot name="torrent.actions" context={pluginContext} />
             </div>
             <ActionMessage message={message} error={actionError} />
 

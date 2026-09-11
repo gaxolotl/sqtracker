@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-context";
+import { PluginBoundary, usePluginHost } from "@/components/plugin-host";
 import {
   useI18n,
   localeNames,
@@ -27,6 +28,7 @@ import {
   MessageSquarePlus,
   Moon,
   Newspaper,
+  Puzzle,
   Rss,
   Search,
   Settings,
@@ -92,6 +94,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { session } = useAuth();
+  const plugins = usePluginHost();
   const { locale, setLocale, t } = useI18n();
   const { config } = useTrackerConfig();
   const unreadMessages = useUnreadMessages(Boolean(session));
@@ -179,7 +182,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const visiblePrimaryItems = session ? primaryItems : [];
 
   const browserTitle = config.showPageInTitle
-    ? `${config.siteName} • ${t(pageTitleKey(pathname))}`
+    ? `${config.siteName} • ${plugins.resolveTitle(pathname) ?? t(pageTitleKey(pathname))}`
     : config.siteName;
 
   return (
@@ -226,6 +229,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Icon aria-hidden="true" />
               </Link>
             ))}
+            {plugins.navigation.map((item) => {
+              const Icon = item.icon ?? Puzzle;
+              return (
+                <PluginBoundary
+                  key={`${item.pluginId}:${item.href}`}
+                  pluginId={item.pluginId}
+                  pluginName={item.pluginName}
+                >
+                  <Link
+                    className={`nav-link ${isActive(item.href) ? "active" : ""}`}
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span>{item.label}</span>
+                    <Icon aria-hidden="true" />
+                  </Link>
+                </PluginBoundary>
+              );
+            })}
             {accountItems.map(({ label, href, icon: Icon }) => (
               <Link
                 className={`nav-link ${isActive(href) ? "active" : ""}`}

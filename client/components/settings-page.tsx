@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, KeyboardEvent, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-context";
+import { PluginSettings } from "@/components/plugin-settings";
 import {
   ActionMessage,
   ApiState,
@@ -98,6 +99,29 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [activeTab, setActiveTab] = useState<"main" | "plugins">("main");
+  const mainTab = useRef<HTMLButtonElement>(null);
+  const pluginsTab = useRef<HTMLButtonElement>(null);
+
+  function handleTabKey(
+    event: KeyboardEvent<HTMLButtonElement>,
+    tab: "main" | "plugins",
+  ) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      return;
+    }
+    event.preventDefault();
+    const next =
+      event.key === "Home"
+        ? "main"
+        : event.key === "End"
+          ? "plugins"
+          : tab === "main"
+            ? "plugins"
+            : "main";
+    setActiveTab(next);
+    (next === "main" ? mainTab : pluginsTab).current?.focus();
+  }
 
   if (!session)
     return (
@@ -206,14 +230,48 @@ export function SettingsPage() {
         title="Site settings"
         info="Runtime-safe changes apply immediately and persist in the database."
       />
-      <ActionMessage message={message} error={error} />
-      <ApiState
-        loading={settings.loading}
-        error={settings.error}
-        empty={!settings.data}
+      <div className="settings-tabs" role="tablist" aria-label="Site settings">
+        <button
+          ref={mainTab}
+          id="main-settings-tab"
+          type="button"
+          role="tab"
+          aria-controls="main-settings-panel"
+          aria-selected={activeTab === "main"}
+          tabIndex={activeTab === "main" ? 0 : -1}
+          onClick={() => setActiveTab("main")}
+          onKeyDown={(event) => handleTabKey(event, "main")}
+        >
+          Main settings
+        </button>
+        <button
+          ref={pluginsTab}
+          id="plugin-settings-tab"
+          type="button"
+          role="tab"
+          aria-controls="plugin-settings-panel"
+          aria-selected={activeTab === "plugins"}
+          tabIndex={activeTab === "plugins" ? 0 : -1}
+          onClick={() => setActiveTab("plugins")}
+          onKeyDown={(event) => handleTabKey(event, "plugins")}
+        >
+          Plugins
+        </button>
+      </div>
+      <section
+        id="main-settings-panel"
+        role="tabpanel"
+        aria-labelledby="main-settings-tab"
+        hidden={activeTab !== "main"}
       >
-        {settings.data ? (
-          <form className="settings-form" onSubmit={save}>
+        <ActionMessage message={message} error={error} />
+        <ApiState
+          loading={settings.loading}
+          error={settings.error}
+          empty={!settings.data}
+        >
+          {settings.data ? (
+            <form className="settings-form" onSubmit={save}>
             <section className="account-section">
               <h2>Identity and access</h2>
               <div className="settings-grid">
@@ -529,9 +587,18 @@ export function SettingsPage() {
                 {saving ? "Saving…" : "Save settings"}
               </button>
             </div>
-          </form>
-        ) : null}
-      </ApiState>
+            </form>
+          ) : null}
+        </ApiState>
+      </section>
+      <section
+        id="plugin-settings-panel"
+        role="tabpanel"
+        aria-labelledby="plugin-settings-tab"
+        hidden={activeTab !== "plugins"}
+      >
+        {activeTab === "plugins" ? <PluginSettings /> : null}
+      </section>
     </main>
   );
 }

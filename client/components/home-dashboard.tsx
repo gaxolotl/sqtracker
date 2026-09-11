@@ -6,6 +6,7 @@ import { LogIn, Search, UserPlus } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useAuth } from "@/components/auth-context";
 import { useI18n } from "@/components/i18n-context";
+import { PluginSlot } from "@/components/plugin-host";
 import { ApiState } from "@/components/ui";
 import { TorrentTable } from "@/components/torrent-table";
 import { useApiData } from "@/hooks/use-api-data";
@@ -46,6 +47,8 @@ export function HomeDashboard({ initialQuery = "" }: { initialQuery?: string }) 
     <main className="page home-page">
       <div className="home-heading-row"><h1>{t("home")}</h1></div>
 
+      <PluginSlot name="home.afterHeader" context={{}} />
+
       <form className="hero-search" id="search" onSubmit={submitSearch}>
         <div className="hero-search-field">
           <Search aria-hidden="true" />
@@ -77,6 +80,7 @@ export function HomeDashboard({ initialQuery = "" }: { initialQuery?: string }) 
           <TorrentTable torrents={popular?.torrents ?? []} />
         </ApiState>
       </section>
+      <PluginSlot name="home.afterContent" context={{}} />
     </main>
   );
 }
