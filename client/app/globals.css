@@ -91,12 +91,14 @@ input:focus-visible {
   display: flex;
   width: var(--sidebar-width);
   flex-direction: column;
+  overflow: hidden;
   background: var(--sidebar);
   border-right: 1px solid var(--border);
 }
 
 .brand-row {
   display: flex;
+  flex: 0 0 auto;
   min-height: 66px;
   align-items: center;
   justify-content: flex-end;
@@ -133,8 +135,20 @@ input:focus-visible {
 .sidebar-nav {
   display: flex;
   flex: 1;
+  min-height: 0;
   flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 25px 0 20px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .nav-link {
@@ -209,6 +223,7 @@ input:focus-visible {
 }
 
 .sidebar-footer {
+  flex: 0 0 auto;
   padding: 14px 34px 12px;
   border-top: 1px solid var(--border);
   color: var(--muted);
