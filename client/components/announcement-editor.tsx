@@ -11,11 +11,13 @@ import {
   SignInRequired,
 } from "@/components/ui";
 import { useApiData } from "@/hooks/use-api-data";
+import { useTrackerConfig } from "@/hooks/use-tracker-config";
 import { apiFetch } from "@/lib/api";
 import type { Announcement } from "@/lib/types";
 
 export function AnnouncementEditor({ slug }: { slug?: string }) {
   const { session } = useAuth();
+  const { config } = useTrackerConfig();
   const router = useRouter();
   const { data, error: loadError, loading } = useApiData<Announcement>(
     session && slug ? `/announcements/${encodeURIComponent(slug)}` : null,
@@ -61,9 +63,9 @@ export function AnnouncementEditor({ slug }: { slug?: string }) {
 
   const form = (
     <form className="stack-form wide-form" key={data?._id ?? "new"} onSubmit={submit}>
-      <Field label="Title"><input name="title" required defaultValue={data?.title} /></Field>
+      <Field label="Title"><input name="title" required maxLength={config.contentLimits.title} defaultValue={data?.title} /></Field>
       <Field label="Body">
-        <textarea name="body" rows={10} required placeholder="Markdown supported" defaultValue={data?.body} />
+        <textarea name="body" rows={10} required maxLength={config.contentLimits.body} placeholder="Markdown supported" defaultValue={data?.body} />
       </Field>
       <div className="inline-checks">
         <label className="check-field"><input type="checkbox" name="pinned" defaultChecked={data?.pinned} /> Pin announcement</label>

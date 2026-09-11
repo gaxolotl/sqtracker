@@ -80,17 +80,29 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         </p>
         <form className="stack-form" onSubmit={submit}>
           <Field label={t("username")}>
-            <input name="username" required autoComplete="username" />
+            <input
+              name="username"
+              maxLength={32}
+              required
+              autoComplete="username"
+            />
           </Field>
           {mode === "register" ? (
             <Field label={t("email")}>
-              <input name="email" type="email" required autoComplete="email" />
+              <input
+                name="email"
+                type="email"
+                maxLength={320}
+                required
+                autoComplete="email"
+              />
             </Field>
           ) : null}
           <Field label={t("password")}>
             <input
               name="password"
               type="password"
+              maxLength={128}
               required
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
@@ -103,6 +115,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
                 name="totp"
                 inputMode="numeric"
                 autoComplete="one-time-code"
+                maxLength={10}
                 required
               />
             </Field>
@@ -111,6 +124,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             <Field label={t("inviteToken")} hint={t("inviteRequiredHint")}>
               <input
                 name="invite"
+                maxLength={4096}
                 required
                 defaultValue={searchParams.get("token") ?? ""}
               />

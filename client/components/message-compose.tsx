@@ -11,6 +11,7 @@ import {
   PageHeader,
   SignInRequired,
 } from "@/components/ui";
+import { useTrackerConfig } from "@/hooks/use-tracker-config";
 import { apiFetch } from "@/lib/api";
 
 export function MessageCompose({
@@ -19,6 +20,7 @@ export function MessageCompose({
   initialRecipient?: string;
 }) {
   const { session } = useAuth();
+  const { config } = useTrackerConfig();
   const router = useRouter();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -41,6 +43,11 @@ export function MessageCompose({
 
     if (!participants.length) {
       setError("Enter at least one recipient username.");
+      return;
+    }
+
+    if (participants.some((username) => username.length > 32)) {
+      setError("Usernames cannot exceed 32 characters.");
       return;
     }
 
@@ -90,14 +97,17 @@ export function MessageCompose({
           label="Subject"
           hint="Optional for group conversations, up to 120 characters."
         >
-          <input name="subject" maxLength={120} />
+          <input
+            name="subject"
+            maxLength={Math.min(config.contentLimits.title, 120)}
+          />
         </Field>
         <Field label="Message" hint="Private messages are sent as plain text.">
           <textarea
             name="body"
             rows={12}
             required
-            maxLength={50000}
+            maxLength={Math.min(config.contentLimits.message, 50000)}
             placeholder="Write your message"
           />
         </Field>

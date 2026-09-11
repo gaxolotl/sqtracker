@@ -14,6 +14,7 @@ import {
   SignInRequired,
 } from "@/components/ui";
 import { useApiData } from "@/hooks/use-api-data";
+import { useTrackerConfig } from "@/hooks/use-tracker-config";
 import { apiFetch, canModerate } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { Markdown } from "@/lib/markdown";
@@ -31,6 +32,7 @@ function AuthorLink({ username }: { username?: string }) {
 
 export function ForumThreadPage({ threadId }: { threadId: string }) {
   const { session } = useAuth();
+  const { config } = useTrackerConfig();
   const router = useRouter();
   const [page, setPage] = useState(0);
   const [editingThread, setEditingThread] = useState(false);
@@ -339,7 +341,7 @@ export function ForumThreadPage({ threadId }: { threadId: string }) {
                     <Field label="Title">
                       <input
                         name="title"
-                        maxLength={200}
+                        maxLength={Math.min(config.contentLimits.title, 200)}
                         required
                         defaultValue={thread.data.title}
                       />
@@ -348,7 +350,7 @@ export function ForumThreadPage({ threadId }: { threadId: string }) {
                       <textarea
                         name="body"
                         rows={10}
-                        maxLength={50000}
+                        maxLength={Math.min(config.contentLimits.body, 50000)}
                         required
                         defaultValue={thread.data.body}
                       />
@@ -450,7 +452,10 @@ export function ForumThreadPage({ threadId }: { threadId: string }) {
                                 <textarea
                                   name="body"
                                   rows={6}
-                                  maxLength={50000}
+                                  maxLength={Math.min(
+                                    config.contentLimits.body,
+                                    50000,
+                                  )}
                                   required
                                   defaultValue={post.body}
                                 />
@@ -504,7 +509,12 @@ export function ForumThreadPage({ threadId }: { threadId: string }) {
                   onSubmit={createPost}
                 >
                   <Field label="Reply" hint="Markdown is supported.">
-                    <textarea name="body" rows={7} maxLength={50000} required />
+                    <textarea
+                      name="body"
+                      rows={7}
+                      maxLength={Math.min(config.contentLimits.body, 50000)}
+                      required
+                    />
                   </Field>
                   <div className="form-actions">
                     <button

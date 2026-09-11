@@ -11,6 +11,7 @@ import {
   SignInRequired,
 } from "@/components/ui";
 import { useApiData } from "@/hooks/use-api-data";
+import { useTrackerConfig } from "@/hooks/use-tracker-config";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { WikiResponse } from "@/lib/types";
 
@@ -22,6 +23,7 @@ export function WikiEditor({
   defaultSlug?: string;
 }) {
   const { session } = useAuth();
+  const { config } = useTrackerConfig();
   const router = useRouter();
   const requestSlug = slug ? (slug === "/" ? "/wiki" : `/wiki${slug}`) : null;
   const { data, error: loadError, loading } = useApiData<WikiResponse>(
@@ -106,13 +108,14 @@ export function WikiEditor({
           <input
             name="slug"
             required
+            maxLength={200}
             defaultValue={slug ? data?.page?.slug.replace(/^\/+/, "") : ""}
             placeholder="rules or faq/uploading"
           />
         )}
       </Field>
-      <Field label="Title"><input name="title" required defaultValue={data?.page?.title} /></Field>
-      <Field label="Body"><textarea name="body" rows={12} required placeholder="Markdown supported" defaultValue={data?.page?.body} /></Field>
+      <Field label="Title"><input name="title" required maxLength={config.contentLimits.title} defaultValue={data?.page?.title} /></Field>
+      <Field label="Body"><textarea name="body" rows={12} required maxLength={config.contentLimits.body} placeholder="Markdown supported" defaultValue={data?.page?.body} /></Field>
       <label className="check-field"><input type="checkbox" name="public" defaultChecked={slug ? Boolean(data?.page?.public) : true} /> Visible to unregistered visitors when public viewing is enabled</label>
       <ActionMessage error={error} />
       <div className="form-actions">

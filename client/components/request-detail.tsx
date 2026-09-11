@@ -130,7 +130,14 @@ export function RequestDetail({ index }: { index: string }) {
               ) : null}
               <form className="inline-form" onSubmit={suggest}>
                 <Field label="Suggest by info hash">
-                  <input name="infoHash" required placeholder="40-character torrent info hash" />
+                  <input
+                    name="infoHash"
+                    required
+                    minLength={40}
+                    maxLength={40}
+                    pattern="[a-fA-F0-9]{40}"
+                    placeholder="40-character torrent info hash"
+                  />
                 </Field>
                 <button className="primary-button" type="submit">Suggest</button>
               </form>

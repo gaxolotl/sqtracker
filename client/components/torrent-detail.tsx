@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Bookmark,
   Download,
+  ExternalLink,
   FileText,
   Flag,
   Magnet,
   Sparkles,
+  Star,
   ThumbsDown,
   ThumbsUp,
   Trash2,
@@ -27,7 +30,10 @@ import { useApiData } from "@/hooks/use-api-data";
 import { TorrentPeers } from "@/components/torrent-peers";
 import { apiFetch, apiOrigin } from "@/lib/api";
 import { formatBytes, formatDateTime } from "@/lib/format";
+import { useTrackerConfig } from "@/hooks/use-tracker-config";
 import type { Torrent } from "@/lib/types";
+import { torrentDisplayName } from "@/lib/torrents";
+import { Markdown } from "@/lib/markdown";
 
 function countVotes(votes: Torrent["upvotes"]) {
   return Array.isArray(votes) ? votes.length : (votes ?? 0);
@@ -88,9 +94,26 @@ function fileLabel(file: FileRecord) {
   return decodePath(file.path ?? file.name) || "File";
 }
 
+function tmdbPoster(path?: string) {
+  return path?.startsWith("/")
+    ? `https://image.tmdb.org/t/p/w500${path}`
+    : undefined;
+}
+
+function episodeLabel(torrent: Torrent) {
+  const metadata = torrent.tmdb;
+  if (metadata?.season === undefined) return null;
+  const season = `S${String(metadata.season).padStart(2, "0")}`;
+  const episodes = (metadata.episodes ?? [])
+    .map((episode) => `E${String(episode).padStart(2, "0")}`)
+    .join("");
+  return `${season}${episodes}`;
+}
+
 export function TorrentDetail({ infoHash }: { infoHash: string }) {
   const { session } = useAuth();
   const router = useRouter();
+  const { config } = useTrackerConfig();
   const { data, error, loading, reload } = useApiData<Torrent>(
     session ? `/torrent/info/${infoHash}` : null,
   );
@@ -148,8 +171,17 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
   }
 
   const canManage =
-    data &&
-    (session.role === "admin" || data.uploadedBy?._id === session.id);
+    data && (session.role === "admin" || data.uploadedBy?._id === session.id);
+  const trackerOrigin = config.trackerUrl || apiOrigin();
+  const magnetHref = data
+    ? `magnet:?xt=urn:btih:${data.infoHash}&dn=${encodeURIComponent(data.name)}&tr=${encodeURIComponent(`${trackerOrigin}/announce/${session.uid}`)}`
+    : "#";
+  const poster = tmdbPoster(data?.tmdb?.posterPath);
+  const releaseLabel = data ? episodeLabel(data) : null;
+  const description = data?.description?.trim() ?? "";
+  const hasDistinctDescription =
+    Boolean(description) && description !== data?.tmdb?.overview?.trim();
+  const tags = data?.tags?.filter(Boolean) ?? [];
 
   return (
     <main className="page detail-page">
@@ -157,7 +189,15 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
         {data ? (
           <>
             <PageHeader
-              title={data.name}
+              title={torrentDisplayName(
+                data,
+                config.shortenMatchedTorrentNames,
+              )}
+              titleTooltip={
+                config.shortenMatchedTorrentNames && data.tmdb?.title
+                  ? data.name
+                  : undefined
+              }
               info={`${data.type || "All"} · ${formatBytes(data.size)}`}
               actions={
                 <>
@@ -167,15 +207,96 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
                   >
                     <Download aria-hidden="true" /> .torrent
                   </a>
-                  <a
-                    className="secondary-button button-link"
-                    href={`magnet:?xt=urn:btih:${data.infoHash}&dn=${encodeURIComponent(data.name)}`}
-                  >
+                  <a className="secondary-button button-link" href={magnetHref}>
                     <Magnet aria-hidden="true" /> Magnet
                   </a>
                 </>
               }
             />
+
+            {data.tmdb ? (
+              <section className="detail-card media-metadata-card">
+                {poster ? (
+                  <Image
+                    className="media-poster"
+                    src={poster}
+                    width={220}
+                    height={330}
+                    sizes="(max-width: 700px) 140px, 220px"
+                    alt={`${data.tmdb.title} poster`}
+                    priority
+                  />
+                ) : (
+                  <div className="media-poster media-poster-empty">
+                    No poster
+                  </div>
+                )}
+                <div className="media-metadata-copy">
+                  <div className="media-kicker">
+                    <span className="status-pill">
+                      {data.tmdb.mediaType === "tv" ? "TV series" : "Movie"}
+                    </span>
+                    {data.tmdb.year ? <span>{data.tmdb.year}</span> : null}
+                    {releaseLabel ? <span>{releaseLabel}</span> : null}
+                    {data.tmdb.episodeTitle ? (
+                      <span>{data.tmdb.episodeTitle}</span>
+                    ) : null}
+                    {data.tmdb.rating ? (
+                      <span className="media-rating">
+                        <Star aria-hidden="true" />{" "}
+                        {data.tmdb.rating.toFixed(1)} TMDB
+                      </span>
+                    ) : null}
+                  </div>
+                  {data.tmdb.originalTitle &&
+                  data.tmdb.originalTitle !== data.tmdb.title ? (
+                    <p className="media-original-title">
+                      Original title: {data.tmdb.originalTitle}
+                    </p>
+                  ) : null}
+                  {data.tmdb.overview ? (
+                    <p className="media-overview">{data.tmdb.overview}</p>
+                  ) : null}
+                  {data.tmdb.genres?.length ? (
+                    <div className="tag-row">
+                      {data.tmdb.genres.map((genre) => (
+                        <span className="tag" key={genre}>
+                          {genre}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <div className="media-facts">
+                    {data.tmdb.runtime ? (
+                      <span>{data.tmdb.runtime} min</span>
+                    ) : null}
+                    {data.tmdb.releaseDate ? (
+                      <span>Released {data.tmdb.releaseDate}</span>
+                    ) : null}
+                  </div>
+                  <div className="media-links">
+                    <a
+                      className="secondary-button button-link"
+                      href={`https://www.themoviedb.org/${data.tmdb.mediaType}/${data.tmdb.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      TMDB <ExternalLink aria-hidden="true" />
+                    </a>
+                    {data.tmdb.imdbId ? (
+                      <a
+                        className="secondary-button button-link"
+                        href={`https://www.imdb.com/title/${data.tmdb.imdbId}/`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        IMDb <ExternalLink aria-hidden="true" />
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              </section>
+            ) : null}
 
             <section className="detail-card">
               <dl className="detail-list">
@@ -185,35 +306,67 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
                     {data.anonymous ? (
                       "Anonymous"
                     ) : (
-                      <Link href={`/user/${data.uploadedBy?.username ?? "unknown"}`}>
+                      <Link
+                        href={`/user/${data.uploadedBy?.username ?? "unknown"}`}
+                      >
                         {data.uploadedBy?.username ?? "Unknown"}
                       </Link>
                     )}
                   </dd>
                 </div>
-                <div><dt>Date</dt><dd>{formatDateTime(data.created)}</dd></div>
-                <div><dt>Info hash</dt><dd className="mono">{data.infoHash}</dd></div>
-                <div><dt>Downloads</dt><dd>{data.downloads ?? 0}</dd></div>
-                <div><dt>Seeders</dt><dd>{data.seeders ?? data.complete ?? "?"}</dd></div>
-                <div><dt>Leechers</dt><dd>{data.leechers ?? data.incomplete ?? "?"}</dd></div>
-                <div><dt>Freeleech</dt><dd>{data.freeleech ? "Yes" : "No"}</dd></div>
-              </dl>
-              {session.role === "admin" ? <TorrentPeers infoHash={data.infoHash} /> : null}
-            </section>
-
-            <section className="copy-section">
-              <h2>Description</h2>
-              <p>{data.description}</p>
-              {data.tags?.filter(Boolean).length ? (
-                <div className="tag-row">
-                  {data.tags.filter(Boolean).map((tag) => (
-                    <Link className="tag" href={`/tags/${encodeURIComponent(tag)}`} key={tag}>
-                      {tag}
-                    </Link>
-                  ))}
+                <div>
+                  <dt>Date</dt>
+                  <dd>{formatDateTime(data.created)}</dd>
                 </div>
+                <div>
+                  <dt>Info hash</dt>
+                  <dd className="mono">{data.infoHash}</dd>
+                </div>
+                <div>
+                  <dt>Downloads</dt>
+                  <dd>{data.downloads ?? 0}</dd>
+                </div>
+                <div>
+                  <dt>Seeders</dt>
+                  <dd>{data.seeders ?? data.complete ?? "?"}</dd>
+                </div>
+                <div>
+                  <dt>Leechers</dt>
+                  <dd>{data.leechers ?? data.incomplete ?? "?"}</dd>
+                </div>
+                <div>
+                  <dt>Freeleech</dt>
+                  <dd>{data.freeleech ? "Yes" : "No"}</dd>
+                </div>
+              </dl>
+              {session.role === "admin" ? (
+                <TorrentPeers infoHash={data.infoHash} />
               ) : null}
             </section>
+
+            {hasDistinctDescription || tags.length ? (
+              <section className="copy-section">
+                {hasDistinctDescription ? (
+                  <>
+                    <h2>Description</h2>
+                    <Markdown text={description} />
+                  </>
+                ) : null}
+                {tags.length ? (
+                  <div className="tag-row">
+                    {tags.map((tag) => (
+                      <Link
+                        className="tag"
+                        href={`/tags/${encodeURIComponent(tag)}`}
+                        key={tag}
+                      >
+                        {tag}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
 
             {data.files?.length ? (
               <section className="detail-card files-card">
@@ -232,22 +385,55 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
             ) : null}
 
             <div className="torrent-actions">
-              <button className="icon-action" type="button" onClick={() => act(`/torrent/vote/${data.infoHash}/up`, "Vote saved.")}>
+              <button
+                className="icon-action"
+                type="button"
+                onClick={() =>
+                  act(`/torrent/vote/${data.infoHash}/up`, "Vote saved.")
+                }
+              >
                 <ThumbsUp aria-hidden="true" /> {countVotes(data.upvotes)}
               </button>
-              <button className="icon-action" type="button" onClick={() => act(`/torrent/vote/${data.infoHash}/down`, "Vote saved.")}>
+              <button
+                className="icon-action"
+                type="button"
+                onClick={() =>
+                  act(`/torrent/vote/${data.infoHash}/down`, "Vote saved.")
+                }
+              >
                 <ThumbsDown aria-hidden="true" /> {countVotes(data.downvotes)}
               </button>
-              <button className="icon-action" type="button" onClick={() => act(`/torrent/bookmark/${data.infoHash}`, "Bookmark updated.")}>
-                <Bookmark aria-hidden="true" /> {data.fetchedBy?.bookmarked ? "Bookmarked" : "Bookmark"}
+              <button
+                className="icon-action"
+                type="button"
+                onClick={() =>
+                  act(`/torrent/bookmark/${data.infoHash}`, "Bookmark updated.")
+                }
+              >
+                <Bookmark aria-hidden="true" />{" "}
+                {data.fetchedBy?.bookmarked ? "Bookmarked" : "Bookmark"}
               </button>
               {session.role === "admin" ? (
-                <button className="icon-action" type="button" onClick={() => act(`/torrent/toggle-freeleech/${data.infoHash}`, "Freeleech updated.")}>
-                  <Sparkles aria-hidden="true" /> {data.freeleech ? "Remove freeleech" : "Set freeleech"}
+                <button
+                  className="icon-action"
+                  type="button"
+                  onClick={() =>
+                    act(
+                      `/torrent/toggle-freeleech/${data.infoHash}`,
+                      "Freeleech updated.",
+                    )
+                  }
+                >
+                  <Sparkles aria-hidden="true" />{" "}
+                  {data.freeleech ? "Remove freeleech" : "Set freeleech"}
                 </button>
               ) : null}
               {canManage ? (
-                <button className="icon-action danger-action" type="button" onClick={removeTorrent}>
+                <button
+                  className="icon-action danger-action"
+                  type="button"
+                  onClick={removeTorrent}
+                >
                   <Trash2 aria-hidden="true" /> Delete
                 </button>
               ) : null}
@@ -256,9 +442,16 @@ export function TorrentDetail({ infoHash }: { infoHash: string }) {
 
             <form className="inline-form report-form" onSubmit={report}>
               <Field label="Report this torrent">
-                <input name="reason" required placeholder="Tell the staff team what is wrong" />
+                <input
+                  name="reason"
+                  required
+                  maxLength={config.contentLimits.comment}
+                  placeholder="Tell the staff team what is wrong"
+                />
               </Field>
-              <button className="secondary-button" type="submit"><Flag aria-hidden="true" /> Report</button>
+              <button className="secondary-button" type="submit">
+                <Flag aria-hidden="true" /> Report
+              </button>
             </form>
 
             <CommentThread
