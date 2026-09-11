@@ -154,35 +154,54 @@ There is also an [inlang project](https://fink.inlang.com/github.com/gaxolotl/sq
 ## Screenshots
 > outdated, to be replaced
 
-Splash screen
-<img width="1663" alt="splash" src="https://user-images.githubusercontent.com/6264509/218762121-e7800d27-c5f1-4288-ba6e-f33c235b9b27.png">
+### Splash screen
+<img width="1663" alt="splash" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20180049.png">
 
-Home
-<img width="1707" alt="home" src="https://user-images.githubusercontent.com/6264509/218762088-e604d1d6-7f6a-4910-b7ff-500e0e762056.png">
+### Home
+<img width="1707" alt="home" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20175536.png">
 
-Torrent
-<img width="1707" alt="torrent" src="https://user-images.githubusercontent.com/6264509/218762124-70d00f99-287a-4efa-90ed-47db7a0be39b.png">
+### Torrent
+<img width="1707" alt="torrent" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20181143.png">
 
-Upload
-<img width="1707" alt="upload" src="https://user-images.githubusercontent.com/6264509/218762133-0a359ca0-6a18-4440-80f6-6d28adba1a6f.png">
+### Upload
+<img width="1707" alt="upload" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20175613.png">
 
-Categories
-<img width="1707" alt="categories" src="https://user-images.githubusercontent.com/6264509/218762073-b1d42889-2868-414e-af60-9fe75ba48ee1.png">
+### Announcements
+<img width="1707" alt="categories" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20175637.png">
 
-Profile
-<img width="1663" alt="profile" src="https://user-images.githubusercontent.com/6264509/218762104-238c90ab-c144-42f1-869e-bbae120f556f.png">
+### Profile
+<img width="1663" alt="profile" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20180032.png">
 
-Account
-<img width="1663" alt="account" src="https://user-images.githubusercontent.com/6264509/218762053-90667723-db6e-473c-8ae0-11bc635f322e.png">
+### Forum
+<img width="1663" alt="account" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20175751.png">
 
-Announcement
-<img width="1663" alt="announcement" src="https://user-images.githubusercontent.com/6264509/218762065-e91ca084-1f9a-4af5-9232-291d87625c7a.png">
+### Messages
+<img width="1663" alt="account" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20175810.png">
 
-Request
-<img width="1663" alt="request" src="https://user-images.githubusercontent.com/6264509/218762116-38cf1b95-7c76-4476-9276-19f6c77c2c9a.png">
+### RSS
+<img width="1663" alt="account" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20175819.png">
 
-Report
-<img width="1707" alt="report" src="https://user-images.githubusercontent.com/6264509/218762109-b76bd5f1-b333-4d09-9c9a-e2fa87b3c2de.png">
+### Wiki
+<img width="1663" alt="account" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20175859.png">
+
+### Reseed (Plugin)
+<img width="1663" alt="account" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20175918.png">
+
+### Reports
+<img width="1663" alt="account" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20175954.png">
+
+### Requests
+<img width="1663" alt="announcement" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20175728.png">
+
+### Search
+<img width="1707" alt="report" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20113239.png">
+
+### Stats
+<img width="1663" alt="account" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20180003.png">
+
+### Settings
+<img width="1663" alt="account" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20180012.png">
+<img width="1663" alt="account" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20180021.png">
 
 ## Contributing
 
