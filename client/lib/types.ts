@@ -162,6 +162,8 @@ export type Report = {
   _id: string;
   reason: string;
   solved: boolean;
+  solvedAt?: number;
+  updated?: number;
   created: number;
   reportedBy?: UserRef;
   torrent?: Torrent;

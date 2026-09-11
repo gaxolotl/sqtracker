@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Pin, Plus } from "lucide-react";
+import { ArrowRight, Pin, Plus } from "lucide-react";
 import { useAuth } from "@/components/auth-context";
 import { ApiState, PageHeader, SignInRequired } from "@/components/ui";
 import { useApiData } from "@/hooks/use-api-data";
@@ -20,7 +20,7 @@ export function AnnouncementsPage() {
     <main className="page list-page">
       <PageHeader title="Announcements" actions={session.role === "admin" ? <Link className="primary-button button-link" href="/announcements/new"><Plus aria-hidden="true" /> New announcement</Link> : null} />
       <ApiState loading={pinned.loading || latest.loading} error={error} empty={!items.length}>
-        <div className="feed-list">{items.map((item) => <Link className="feed-card" href={`/announcements/${item.slug}`} key={item._id}><div><h2>{item.pinned ? <Pin aria-label="Pinned" /> : null}{item.title}</h2><p>Posted {formatDateTime(item.created)} by <span>{item.createdBy?.username ?? "Unknown"}</span></p></div><span className="feed-arrow">→</span></Link>)}</div>
+        <div className="feed-list">{items.map((item) => <Link className="feed-card" href={`/announcements/${item.slug}`} key={item._id}><div><h2>{item.pinned ? <Pin aria-label="Pinned" /> : null}{item.title}</h2><p>Posted {formatDateTime(item.created)} by <span>{item.createdBy?.username ?? "Unknown"}</span></p></div><span className="feed-arrow"><ArrowRight aria-hidden="true" /></span></Link>)}</div>
       </ApiState>
     </main>
   );

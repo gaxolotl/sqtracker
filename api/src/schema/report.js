@@ -5,6 +5,8 @@ const Report = new mongoose.Schema({
   reportedBy: mongoose.Schema.ObjectId,
   reason: String,
   solved: Boolean,
+  solvedAt: Number,
+  updated: Number,
   created: Number,
 });
 

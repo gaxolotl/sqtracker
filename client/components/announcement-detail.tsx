@@ -10,6 +10,7 @@ import { ActionMessage, ApiState, PageHeader, SignInRequired } from "@/component
 import { useApiData } from "@/hooks/use-api-data";
 import { apiFetch } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
+import { Markdown } from "@/lib/markdown";
 import type { Announcement } from "@/lib/types";
 
 export function AnnouncementDetail({ slug }: { slug: string }) {
@@ -69,7 +70,9 @@ export function AnnouncementDetail({ slug }: { slug: string }) {
               ) : null}
             />
             <ActionMessage error={actionError} />
-            <article className="prose-card"><p>{data.body}</p></article>
+            <article className="prose-card">
+              <Markdown text={data.body ?? ""} />
+            </article>
             <CommentThread
               comments={data.comments}
               endpoint={`/announcements/comment/${data._id}`}

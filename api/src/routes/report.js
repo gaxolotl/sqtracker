@@ -1,9 +1,12 @@
 import express from "express";
 import ratelimit from "express-rate-limit";
 import {
+  deleteReport,
   fetchReport,
   getReports,
+  getSolvedReports,
   setReportResolved,
+  updateReport,
 } from "../controllers/moderation.js";
 
 const router = express.Router();
@@ -27,7 +30,10 @@ const limiter = ratelimit({
 
 export default () => {
   router.get("/page/:page", limiter, getReports);
+  router.get("/solved/page/:page", limiter, getSolvedReports);
   router.post("/resolve/:reportId", limiter, setReportResolved);
+  router.put("/:reportId", limiter, updateReport);
+  router.delete("/:reportId", limiter, deleteReport);
   router.get("/:reportId", limiter, fetchReport);
   return router;
 };

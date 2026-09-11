@@ -7,6 +7,7 @@ import Request from "../schema/request.js";
 import Comment from "../schema/comment.js";
 import { countSwarmPeers } from "../tracker/swarm-stats.js";
 import { canModerate } from "../utils/roles.js";
+import { fuzzyScore } from "../utils/fuzzy.js";
 import {
   getContentLimits,
   validateContentText,
@@ -73,8 +74,9 @@ export const fetchReport = async (req, res, next) => {
   }
 };
 
-export const getReports = async (req, res, next) => {
+const listReports = (solved) => async (req, res, next) => {
   const pageSize = 25;
+  const scanLimit = 200;
   try {
     if (!canModerate(req.userRole)) {
       res.status(401).send("You do not have permission to view reports");
@@ -83,18 +85,17 @@ export const getReports = async (req, res, next) => {
 
     let { page } = req.params;
     page = parseInt(page) || 0;
+    const query =
+      typeof req.query.q === "string" ? req.query.q.slice(0, 100) : "";
     const reports = await Report.aggregate([
       {
-        $match: { solved: false },
+        $match: { solved },
       },
       {
-        $sort: { created: -1 },
+        $sort: solved ? { solvedAt: -1, created: -1 } : { created: -1 },
       },
       {
-        $skip: page * pageSize,
-      },
-      {
-        $limit: pageSize,
+        $limit: scanLimit,
       },
       {
         $lookup: {
@@ -143,11 +144,29 @@ export const getReports = async (req, res, next) => {
         },
       },
     ]);
-    res.json(reports);
+
+    const matched = query
+      ? reports
+          .map((report) => ({
+            report,
+            score: fuzzyScore(
+              `${report.reason ?? ""} ${report.torrent?.name ?? ""}`,
+              query,
+            ),
+          }))
+          .filter((entry) => entry.score > 0)
+          .sort((left, right) => right.score - left.score)
+          .map((entry) => entry.report)
+      : reports;
+
+    res.json(matched.slice(page * pageSize, page * pageSize + pageSize));
   } catch (e) {
     next(e);
   }
 };
+
+export const getReports = listReports(false);
+export const getSolvedReports = listReports(true);
 
 export const setReportResolved = async (req, res, next) => {
   try {
@@ -158,9 +177,83 @@ export const setReportResolved = async (req, res, next) => {
 
     await Report.findOneAndUpdate(
       { _id: req.params.reportId },
-      { $set: { solved: true } },
+      {
+        $set: {
+          solved: true,
+          solvedAt: Date.now(),
+          updated: Date.now(),
+        },
+      },
     );
 
+    res.sendStatus(200);
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const updateReport = async (req, res, next) => {
+  try {
+    if (!canModerate(req.userRole)) {
+      res.status(401).send("You do not have permission to edit a report");
+      return;
+    }
+
+    const update = {};
+    if (req.body.reason !== undefined) {
+      const reason = validateContentText(
+        req.body.reason,
+        "Reason",
+        getContentLimits().comment,
+        res,
+        { trim: false },
+      );
+      if (reason === null) return;
+      update.reason = reason;
+    }
+    if (req.body.solved !== undefined) {
+      if (typeof req.body.solved !== "boolean") {
+        res.status(400).send("solved must be a boolean");
+        return;
+      }
+      update.solved = req.body.solved;
+      update.solvedAt = req.body.solved ? Date.now() : null;
+    }
+    if (!Object.keys(update).length) {
+      res.status(400).send("Request must include reason or solved");
+      return;
+    }
+    update.updated = Date.now();
+
+    const report = await Report.findOneAndUpdate(
+      { _id: req.params.reportId },
+      { $set: update },
+      { new: true },
+    );
+    if (!report) {
+      res.status(404).send("Report could not be found");
+      return;
+    }
+    res.sendStatus(200);
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const deleteReport = async (req, res, next) => {
+  try {
+    if (!canModerate(req.userRole)) {
+      res.status(401).send("You do not have permission to delete a report");
+      return;
+    }
+
+    const report = await Report.findOneAndDelete({
+      _id: req.params.reportId,
+    });
+    if (!report) {
+      res.status(404).send("Report could not be found");
+      return;
+    }
     res.sendStatus(200);
   } catch (e) {
     next(e);
