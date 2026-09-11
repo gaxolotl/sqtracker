@@ -1,7 +1,7 @@
 "use client";
 
-import { Copy, RefreshCw, Rss } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { Copy, ExternalLink, RefreshCw, Rss, ShieldAlert } from "lucide-react";
+import { useState } from "react";
 import { useAuth } from "@/components/auth-context";
 import {
   ActionMessage,
@@ -14,6 +14,12 @@ import { useApiData } from "@/hooks/use-api-data";
 import { apiFetch, apiOrigin } from "@/lib/api";
 
 type RssAccess = { token: string };
+
+const feedReaders = [
+  { name: "Feedly", url: "https://feedly.com/i/discover" },
+  { name: "Inoreader", url: "https://www.inoreader.com/" },
+  { name: "NewsBlur", url: "https://www.newsblur.com/" },
+];
 
 export function RssPage() {
   const { session } = useAuth();
@@ -36,15 +42,20 @@ export function RssPage() {
       </main>
     );
 
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    setMessage("Feed URL updated.");
-  }
-
-  async function copyFeed() {
+  async function copyFeed(reader?: string) {
     if (!feedUrl) return;
-    await navigator.clipboard.writeText(feedUrl);
-    setMessage("Feed URL copied.");
+    setError("");
+    setMessage("");
+    try {
+      await navigator.clipboard.writeText(feedUrl);
+      setMessage(
+        reader
+          ? `Feed URL copied. Paste it into ${reader}.`
+          : "Feed URL copied.",
+      );
+    } catch {
+      setError("Could not copy the feed URL. Copy it from the field above.");
+    }
   }
 
   async function regenerateToken() {
@@ -97,30 +108,72 @@ export function RssPage() {
         error={access.error}
         empty={!access.data}
       >
-        <form className="stack-form wide-form" onSubmit={submit}>
+        <div className="stack-form wide-form">
           <Field label="Optional search filter">
             <input
               value={query}
+              maxLength={200}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Filter by name or description"
+              aria-label="Optional search filter"
             />
           </Field>
           <Field label="Private feed URL">
             <div className="copy-field">
-              <input readOnly value={feedUrl} />
+              <input readOnly value={feedUrl} aria-label="Private feed URL" />
               <button
                 className="secondary-button"
                 type="button"
-                onClick={copyFeed}
+                onClick={() => void copyFeed()}
               >
                 <Copy aria-hidden="true" /> Copy
               </button>
             </div>
           </Field>
-          <ActionMessage message={message} error={error} />
-          <div className="form-actions rss-actions">
+          <div className="rss-primary-actions">
+            <a
+              className="primary-button button-link"
+              href={feedUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <ExternalLink aria-hidden="true" /> Open feed
+            </a>
+          </div>
+          <section className="rss-reader-section">
+            <div>
+              <h2>Add to a feed reader</h2>
+              <p>
+                Choose a reader to copy the private URL and open its add-feed
+                screen.
+              </p>
+            </div>
+            <div className="rss-reader-actions">
+              {feedReaders.map((reader) => (
+                <a
+                  className="secondary-button button-link"
+                  href={reader.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => void copyFeed(reader.name)}
+                  key={reader.name}
+                >
+                  <ExternalLink aria-hidden="true" /> {reader.name}
+                </a>
+              ))}
+            </div>
+          </section>
+          <section className="rss-token-section">
+            <ShieldAlert aria-hidden="true" />
+            <div>
+              <h2>Token security</h2>
+              <p>
+                Regenerate only if this URL was exposed. Every existing feed
+                subscription will stop working.
+              </p>
+            </div>
             <button
-              className="secondary-button"
+              className="secondary-button danger-action"
               type="button"
               disabled={regenerating}
               onClick={regenerateToken}
@@ -128,16 +181,9 @@ export function RssPage() {
               <RefreshCw aria-hidden="true" />{" "}
               {regenerating ? "Regenerating…" : "Regenerate token"}
             </button>
-            <a
-              className="primary-button button-link"
-              href={feedUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Open feed
-            </a>
-          </div>
-        </form>
+          </section>
+          <ActionMessage message={message} error={error} />
+        </div>
       </ApiState>
     </main>
   );
