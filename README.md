@@ -4,7 +4,7 @@
 [![License GPLv3](https://badgen.net/badge/license/GPLv3/blue)](./LICENSE)
 > continuing the legacy of sqtracker.
 
-sqtrackr is a modern private BitTorrent tracker platform.
+sqtrackr is an open-source, self-hosted BitTorrent tracker platform for building private or public tracker communities.
 
 It implements all of the features required to run a private (or public) tracker and does not focus on any one specific type of content. It is suitable for running a tracker site of any kind.
 
@@ -59,6 +59,53 @@ The roadmap is still being expanded.
 
 * Premoderation option
 * Anti-cheat
+
+## Quick Start
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/gaxolotl/sqtrackr.git
+cd sqtrackr
+```
+
+### 2. Create your configuration
+
+Copy the example configuration:
+
+```bash
+cp config.example.js config.js
+```
+
+Then edit `config.js` and set the required environment values and secrets.
+
+### 3. Configure your domain
+
+If you are using the included Traefik setup:
+
+* Set your ACME email in `docker-compose.yml`
+* Replace `example.com` in `traefik.yml` with your domain
+
+### 4. Start sqtrackr
+
+```bash
+docker compose up -d
+```
+
+sqtrackr will start the API, web client, MongoDB database, and reverse proxy.
+
+### 5. Log in
+
+On first startup, sqtrackr creates an administrator account:
+
+```text
+Username: admin
+Password: admin
+```
+
+Change the password immediately after logging in.
+
+For the full configuration and deployment guide, see the sections below.
 
 ## Configuration
 
@@ -152,7 +199,6 @@ There is also an [inlang project](https://fink.inlang.com/github.com/gaxolotl/sq
 | Bulgarian          | [@gaxolotl](https://github.com/gaxolotl)             |
 
 ## Screenshots
-> outdated, to be replaced
 
 ### Splash screen
 <img width="1663" alt="splash" src="https://raw.githubusercontent.com/gaxolotl/gaxolotl/refs/heads/main/Screenshot%202026-09-11%20180049.png">
