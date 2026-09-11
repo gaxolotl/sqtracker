@@ -19,6 +19,8 @@ It implements all of the features required to run a private (or public) tracker 
   * Option to browse torrents without logging in (for search engine discovery)
 * Torrent management
   * Uploading torrents with rich metadata (title, description, source, mediainfo, category, tags etc.)
+  * Automatic movie and TV metadata matching via TMDB, with poster-backed suggestions
+  * Natural-language and fuzzy search (e.g. "The Rookie season 6 episode 3")
   * Searching torrents or browsing by category or tags
   * Freeleech options (specific torrents, site-wide)
   * Torrent grouping (e.g. different formats of same movie)
@@ -40,9 +42,14 @@ It implements all of the features required to run a private (or public) tracker 
   * Reporting torrents to be reviewed by staff
   * Detailed stats available to admins
   * Runtime-safe site settings available to admins without a service restart
+  * Configurable content limits for names, titles, bodies, comments, messages, profiles, MediaInfo, tags and the maximum uploaded `.torrent` size
   * Wiki system
   * Announcements / news posts
   * Ban / unban users
+* Plugins
+  * Trusted, build-time plugin API with routes, storage, settings, events and UI slots
+  * Enable, configure and remove installed plugins from **Settings → Plugins**
+  * Ships with the Reseed example plugin for reviving torrents that have lost their seeders
 * Tracker appearance
   * Configurable theme / CSS
 
@@ -66,6 +73,16 @@ After setup, admins can change runtime-safe site, tracker, economy, theme, and a
 ### The initial admin user
 
 On first start up, sqtrackr will create a user named `admin` with the password `admin`. A confirmation email will be sent to the admin email address you specified in your config file. Once logged in for the first time, you should change the admin password immediately. This admin user can be used to send other admin invites (normal accounts cannot send admin invites). This user cannot be deleted/banned.
+
+## Plugins
+
+sqtrackr supports **trusted, build-time plugins** that can add API routes, storage, settings, domain-event handlers, navigation, pages and UI slots.
+
+Plugins are installed by adding a workspace package and registering it in the API and client registries, then rebuilding — there is intentionally no runtime code upload or execution. Admins can enable, disable, configure and remove installed plugins from **Settings → Plugins**, and plugin settings get their own generated form in that tab.
+
+The repository ships with the [Reseed](./plugins/reseed-radar) example plugin, which lets members request reseeds for torrents that have lost their seeders, tracks demand, and automatically closes requests when a seeder returns.
+
+See [PLUGINS.md](./PLUGINS.md) for the manifest reference, permissions, lifecycle, server and client APIs, events, UI slots and a step-by-step guide to writing a plugin.
 
 ## Deploying
 
@@ -171,7 +188,7 @@ Report
 
 Pull requests are welcome! If you fork sqtrackr and think you have made some improvements, please open a pull request so other users deploying sqtrackr from this repository can also get the benefits.
 
-Please see the [CONTRIBUTING](./CONTRIBUTING.md) document for guidance on code style etc.
+Please see the [CONTRIBUTING](./CONTRIBUTING.md) document for development setup, architecture notes, code style and the required checks, and [PLUGINS.md](./PLUGINS.md) when building plugins.
 
 ## License
 
