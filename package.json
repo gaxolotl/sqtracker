@@ -1,6 +1,6 @@
 {
   "engines": {
-    "node": ">=22.0.0"
+    "bun": ">=1.4.0"
   },
   "name": "sqtracker",
   "version": "2.1.0",
@@ -13,14 +13,25 @@
     "plugins/*"
   ],
   "scripts": {
-    "api:dev": "pnpm --filter @sqtracker/api dev",
-    "client:dev": "pnpm --filter @sqtracker/client dev",
-    "dev": "npm-run-all --parallel api:dev client:dev",
-    "client:build": "pnpm --filter @sqtracker/client build",
+    "api:dev": "bun run --filter @sqtracker/api dev",
+    "client:dev": "bun run --filter @sqtracker/client dev",
+    "dev": "bun run --parallel api:dev client:dev",
+    "client:build": "bun run --filter @sqtracker/client build",
     "lint": "prettier --write --ignore-path=.eslintignore \"**/*.{js,json}\""
   },
   "devDependencies": {
-    "npm-run-all": "^4.1.5"
+    "prettier": "^3.8.4"
   },
-  "dependencies": {}
+  "overrides": {
+    "qs": "^6.16.0",
+    "ip": "file:vendor/ip"
+  },
+  "trustedDependencies": [
+    "bcrypt",
+    "bufferutil",
+    "core-js",
+    "es5-ext",
+    "unrs-resolver",
+    "utf-8-validate"
+  ]
 }

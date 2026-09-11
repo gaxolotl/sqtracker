@@ -271,7 +271,7 @@ The host renders each contribution inside a per-plugin error boundary, so a fail
    const staticPlugins = [example] satisfies readonly ClientPlugin[];
    ```
 
-5. Add the package as a dependency of the `api` and `client` workspaces, then run `pnpm install`.
+5. Add the package as a dependency of the `api` and `client` workspaces, then run `bun install`.
 6. Restart the API and rebuild the client.
 
 Enable or disable it, configure it and remove it from **Settings → Plugins**.
@@ -285,7 +285,7 @@ Enable or disable it, configure it and remove it from **Settings → Plugins**.
 Plugin behavior is covered by `api/test/plugins.test.js`:
 
 ```sh
-pnpm --filter @sqtracker/api test
+bun run --filter @sqtracker/api test
 ```
 
 The suite checks manifest validation and ordering, settings validation and persistence, management actions, event isolation, route namespacing and role phases, and the Reseed plugin's domain helpers.

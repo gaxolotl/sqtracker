@@ -2,8 +2,8 @@
 
 ## Repository
 
-- This is a pnpm monorepo with `api` and `client` workspaces. Use pnpm, not yarn or npm, for project commands.
-- The API is an Express/Mongoose application using ESM source and Babel at runtime.
+- This is a Bun monorepo with `api` and `client` workspaces. Use Bun, not Node, pnpm, yarn or npm, for project commands.
+- The API is an Express/Mongoose application using ESM source run directly on Bun.
 - The client is Next.js 16 with React 19. Read and follow the additional generated rules in `client/AGENTS.md` before changing client code.
 - The worktree may contain ongoing changes. Never discard or rewrite unrelated modifications.
 
@@ -41,9 +41,9 @@
 Run the relevant checks before finishing:
 
 ```sh
-pnpm --filter @sqtracker/client lint
-pnpm --filter @sqtracker/client build
-node --check api/src/index.js
+bun run --filter @sqtracker/client lint
+bun run --filter @sqtracker/client build
+bun build --no-bundle --target=bun api/src/index.js > /dev/null
 git diff --check
 ```
 

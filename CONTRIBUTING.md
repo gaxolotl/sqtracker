@@ -6,9 +6,9 @@ Read this before opening a change. It covers the development setup, the current 
 
 ## Development setup
 
-- Use Node.js 22 or newer and **pnpm**.
-- Install dependencies with `pnpm install`.
-- Run both workspaces with `pnpm dev`, or use `pnpm api:dev` and `pnpm client:dev` separately.
+- Use **Bun** 1.4 or newer.
+- Install dependencies with `bun install`.
+- Run both workspaces with `bun dev`, or use `bun api:dev` and `bun client:dev` separately.
 - Copy `config.example.js` to the ignored `config.js` for local deployment values. Never commit secrets from `config.js`.
 
 ## Architecture
@@ -27,7 +27,7 @@ Please follow existing conventions in code style. If you PR any messy, redundant
 
 ### Linting
 
-All client contributions **must** pass `pnpm --filter @sqtracker/client lint` and `pnpm --filter @sqtracker/client build`. Use pnpm for every workspace command.
+All client contributions **must** pass `bun run --filter @sqtracker/client lint` and `bun run --filter @sqtracker/client build`. Use Bun for every workspace command.
 
 ### Comments
 
@@ -50,13 +50,13 @@ When working on the front-end, use the existing CSS variables and responsive lay
 ## Required checks
 
 ```sh
-pnpm --filter @sqtracker/client lint
-pnpm --filter @sqtracker/client build
-node --check api/src/index.js
+bun run --filter @sqtracker/client lint
+bun run --filter @sqtracker/client build
+bun build --no-bundle --target=bun api/src/index.js > /dev/null
 git diff --check
 ```
 
-For API behavior changes, also run `node --check` on the changed files and exercise the endpoint against a running API with MongoDB when possible. Include what you tested in the pull request description.
+For API behavior changes, also run `bun build --no-bundle --target=bun` on the changed files and exercise the endpoint against a running API with MongoDB when possible. Include what you tested in the pull request description.
 
 ## License
 

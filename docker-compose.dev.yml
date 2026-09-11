@@ -35,8 +35,8 @@ services:
   api:
     container_name: sq_api
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api/Dockerfile
     restart: always
     ports:
       - "127.0.0.1:3001:3001"

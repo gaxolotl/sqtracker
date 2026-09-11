@@ -5,15 +5,12 @@
   "license": "GPL-3.0-only",
   "type": "module",
   "scripts": {
-    "dev": "nodemon --exec babel-node src/index.js",
-    "start": "babel-node src/index.js",
-    "test": "node --test test/*.test.js",
-    "migration:torrent-add-fuzzy-name": "babel-node src/migrations/torrent-add-fuzzy-name.js"
+    "dev": "bun --watch src/index.js",
+    "start": "bun src/index.js",
+    "test": "bun test",
+    "migration:torrent-add-fuzzy-name": "bun src/migrations/torrent-add-fuzzy-name.js"
   },
   "dependencies": {
-    "@babel/core": "^7.29.7",
-    "@babel/node": "^7.29.7",
-    "@babel/preset-env": "^7.29.7",
     "@sqtrackr/plugin-reseed-radar": "workspace:*",
     "@sqtrackr/plugin-sdk": "workspace:*",
     "@sentry/node": "^7.36.0",
@@ -43,11 +40,9 @@
     "yup": "^1.7.1"
   },
   "devDependencies": {
-    "concurrently": "^10.0.3",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
-    "nodemon": "^3.1.14",
     "prettier": "^3.8.4"
   }
 }
