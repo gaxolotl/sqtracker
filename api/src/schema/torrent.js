@@ -1,6 +1,31 @@
 import mongoose from "mongoose";
 import fuzzySearch from "mongoose-fuzzy-searching";
 
+const TmdbMetadata = new mongoose.Schema(
+  {
+    provider: { type: String, enum: ["tmdb"] },
+    id: Number,
+    mediaType: { type: String, enum: ["movie", "tv"] },
+    imdbId: String,
+    title: String,
+    originalTitle: String,
+    overview: String,
+    releaseDate: String,
+    year: Number,
+    posterPath: String,
+    backdropPath: String,
+    genres: [String],
+    rating: Number,
+    voteCount: Number,
+    runtime: Number,
+    season: Number,
+    episodes: [Number],
+    episodeTitle: String,
+    confidence: Number,
+  },
+  { _id: false },
+);
+
 const Torrent = new mongoose.Schema({
   infoHash: String,
   binary: String,
@@ -23,6 +48,7 @@ const Torrent = new mongoose.Schema({
   group: mongoose.Schema.ObjectId,
   confidenceScore: Number,
   mediaInfo: String,
+  tmdb: { type: TmdbMetadata, default: undefined },
 });
 
 Torrent.plugin(fuzzySearch, { fields: ["name"] });
